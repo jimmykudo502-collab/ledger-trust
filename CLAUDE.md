@@ -60,6 +60,8 @@ Package manager is **pnpm** (see `pnpm-lock.yaml`, `pnpm-workspace.yaml`). `node
 
 Vitest is pinned to 3.x because the app uses Vite 5 (Vitest 4+ requires Vite 6+). Test config lives in `vitest.config.mts`.
 
+The repo lives inside OneDrive, which sometimes locks files in `node_modules` mid-run; a test file then fails to load with "resource busy or locked". That is not a code failure: rerun. Always gate commits on the exit codes of `pnpm test && pnpm lint && pnpm exec tsc --noEmit`, never on grepping their output.
+
 ## Architecture
 
 ```

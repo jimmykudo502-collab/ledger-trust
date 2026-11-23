@@ -6,6 +6,7 @@ import { ClientFileStore } from "./db/ClientFileStore";
 import type { TransactionRunner } from "./db/TransactionRunner";
 import { SpreadsheetReader } from "./import/SpreadsheetReader";
 import { SqliteBankAccountRepository } from "./repositories/BankAccountRepository";
+import { SqliteCodingRuleRepository } from "./repositories/CodingRuleRepository";
 import { SqliteJournalRepository } from "./repositories/JournalRepository";
 import { SqliteAccountRepository } from "./repositories/SqliteAccountRepository";
 import { SqliteClientRepository } from "./repositories/SqliteClientRepository";
@@ -15,6 +16,7 @@ import { BankAccountService } from "./services/BankAccountService";
 import { BankPostingService } from "./services/BankPostingService";
 import { ChartOfAccountsService } from "./services/ChartOfAccountsService";
 import { ClientService } from "./services/ClientService";
+import { CodingRuleService } from "./services/CodingRuleService";
 import { CodingService } from "./services/CodingService";
 import { ImportService } from "./services/ImportService";
 import { JournalService } from "./services/JournalService";
@@ -31,6 +33,7 @@ export interface Backend {
   readonly staging: StagingService;
   readonly coding: CodingService;
   readonly posting: BankPostingService;
+  readonly codingRules: CodingRuleService;
   /** Closes every open client database. */
   dispose(): void;
 }
@@ -65,7 +68,13 @@ export const createBackend = (dataDirectory: string): Backend => {
   );
 
   const stagingFor = (clientId: string) => new SqliteStagingRepository(pool.get(clientId));
-  const imports = new ImportService(new SpreadsheetReader(), bankAccounts, stagingFor);
+  const codingRules = new CodingRuleService(
+    (clientId) => new SqliteCodingRuleRepository(pool.get(clientId)),
+    stagingFor,
+    bankAccounts,
+    chartOfAccounts,
+  );
+  const imports = new ImportService(new SpreadsheetReader(), bankAccounts, stagingFor, codingRules);
   const staging = new StagingService(stagingFor, bankAccounts);
   const inTransaction: TransactionRunner = (clientId, work) => pool.get(clientId).transaction(work)();
   const journal = new JournalService((clientId) => new SqliteJournalRepository(pool.get(clientId)), chartOfAccounts);
@@ -81,6 +90,7 @@ export const createBackend = (dataDirectory: string): Backend => {
     staging,
     coding,
     posting,
+    codingRules,
     dispose: () => pool.closeAll(),
   };
 };

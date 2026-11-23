@@ -17,6 +17,7 @@ import { parseRows, type ParsedRow } from "../import/rowParsing";
 import type { RawSheet, SpreadsheetReader } from "../import/SpreadsheetReader";
 import type { StagingRepository } from "../repositories/StagingRepository";
 import type { BankAccountService } from "./BankAccountService";
+import type { RuleSuggester } from "./CodingRuleService";
 
 /** Gives the staging repository for one client. */
 export type StagingRepositoryProvider = (clientId: string) => StagingRepository;
@@ -44,12 +45,14 @@ export class ImportService {
    * @param reader Reads spreadsheets and pasted text.
    * @param bankAccounts Resolves the tab being imported into.
    * @param stagingFor Returns the staging repository for a client.
+   * @param rules Codes new rows from remembered rules (FR-18).
    * @param newToken Source of tokens (injectable for tests).
    */
   public constructor(
     private readonly reader: SpreadsheetReader,
     private readonly bankAccounts: BankAccountService,
     private readonly stagingFor: StagingRepositoryProvider,
+    private readonly rules: RuleSuggester,
     private readonly newToken: () => string = randomUUID,
   ) {}
 
@@ -108,8 +111,9 @@ export class ImportService {
   }
 
   /**
-   * Stages the importable rows, leaving out any the user excluded (FR-13).
-   * Nothing reaches the ledger until the rows are posted.
+   * Stages the importable rows, leaving out any the user excluded (FR-13),
+   * and codes them with any matching remembered rule (FR-18). Nothing
+   * reaches the ledger until the rows are posted.
    * @param ref The opened source, sheet, client and tab.
    * @param mapping Which columns hold what.
    * @param excludedRows Spreadsheet row numbers not to import.
@@ -117,9 +121,10 @@ export class ImportService {
   public stage(ref: SheetRef, mapping: ColumnMapping, excludedRows: readonly number[]): StageResult {
     const source = this.source(ref.token);
     const excluded = new Set(excludedRows);
+    const suggest = this.rules.suggester(ref.clientId, ref.bankAccountId);
     const rows = this.preview(ref, mapping)
       .filter((row) => row.problem === null && !excluded.has(row.rowNumber))
-      .map((row) => ({ ...toStagedRow(row), rowNumber: row.rowNumber }));
+      .map((row) => ({ ...toStagedRow(row), rowNumber: row.rowNumber, offsetAccountId: suggest(row.description) }));
     if (rows.length === 0) {
       throw new UserFacingError("There are no rows to import. Check the column choices or the rows you left out.");
     }
