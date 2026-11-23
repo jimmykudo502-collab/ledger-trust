@@ -9,4 +9,7 @@ export const APP_CHANNELS = {
   ACCOUNTS_CREATE: "app:accountsCreate",
   ACCOUNTS_UPDATE: "app:accountsUpdate",
   ACCOUNTS_DELETE: "app:accountsDelete",
+  TEMPLATES_INFO: "app:templatesInfo",
+  TEMPLATES_SAVE_FROM_CLIENT: "app:templatesSaveFromClient",
+  TEMPLATES_IMPORT_INTO_CLIENT: "app:templatesImportIntoClient",
 } as const;

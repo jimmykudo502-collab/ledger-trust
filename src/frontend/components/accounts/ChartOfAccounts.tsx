@@ -7,6 +7,7 @@ import {
 } from "../../../common/accounts/accountSchemas";
 import { AccountDialog } from "./AccountDialog";
 import { filterAccounts } from "./accountFilter";
+import { TemplateActions } from "./TemplateActions";
 
 interface ChartOfAccountsProps {
   clientId: string;
@@ -89,6 +90,12 @@ export function ChartOfAccounts({ clientId }: ChartOfAccountsProps) {
           </button>
         </div>
       </div>
+
+      <TemplateActions
+        clientId={clientId}
+        ownAccountCount={accounts.filter((a) => a.systemKey === null).length}
+        onImported={() => void reload()}
+      />
 
       {error && (
         <p className="form-error" role="alert">

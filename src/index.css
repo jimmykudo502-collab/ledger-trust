@@ -409,3 +409,24 @@ fieldset.field-row legend {
 .field select {
   width: 100%;
 }
+
+.template-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.template-actions .form-error,
+.notice {
+  margin: 0;
+  flex-basis: 100%;
+}
+
+.notice {
+  color: var(--text);
+  background: var(--accent-soft);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.7rem;
+}

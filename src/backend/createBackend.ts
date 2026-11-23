@@ -5,13 +5,16 @@ import { ClientDatabaseFactory } from "./db/ClientDatabaseFactory";
 import { ClientFileStore } from "./db/ClientFileStore";
 import { SqliteAccountRepository } from "./repositories/SqliteAccountRepository";
 import { SqliteClientRepository } from "./repositories/SqliteClientRepository";
+import { AccountTemplateService } from "./services/AccountTemplateService";
 import { ChartOfAccountsService } from "./services/ChartOfAccountsService";
 import { ClientService } from "./services/ClientService";
+import { JsonFileTemplateStore } from "./templates/TemplateStore";
 
 /** The wired-up backend services plus a way to shut them down. */
 export interface Backend {
   readonly clients: ClientService;
   readonly chartOfAccounts: ChartOfAccountsService;
+  readonly accountTemplates: AccountTemplateService;
   /** Closes every open client database. */
   dispose(): void;
 }
@@ -19,7 +22,8 @@ export interface Backend {
 /**
  * Composition root: builds the backend services and their dependencies.
  * @param dataDirectory Folder for app data (Electron's `userData`); client
- *   databases go in its `clients` subfolder.
+ *   databases go in its `clients` subfolder and the master chart of accounts
+ *   template in `templates/master-chart-of-accounts.json`.
  */
 export const createBackend = (dataDirectory: string): Backend => {
   const fileStore = new ClientFileStore(path.join(dataDirectory, "clients"));
@@ -32,9 +36,17 @@ export const createBackend = (dataDirectory: string): Backend => {
     [chartOfAccounts],
   );
 
+  const accountTemplates = new AccountTemplateService(
+    new JsonFileTemplateStore(
+      path.join(dataDirectory, "templates", "master-chart-of-accounts.json"),
+    ),
+    chartOfAccounts,
+  );
+
   return {
     clients,
     chartOfAccounts,
+    accountTemplates,
     dispose: () => pool.closeAll(),
   };
 };
