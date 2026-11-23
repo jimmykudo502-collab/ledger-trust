@@ -96,3 +96,11 @@ Follow industry-standard best practices for TypeScript, React and Electron (incl
 - Add JSDoc comments to exported functions, classes and methods, matching the existing style.
 - Double quotes, semicolons, trailing commas in multi-line literals.
 - Validate data crossing the IPC boundary or coming back from LLM calls with `zod` where shapes matter.
+
+### State management
+
+- Use React's built-in state (`useState`, `useReducer`) for state owned by one component or a small subtree.
+- When state must be shared across multiple components (e.g. conversation history, settings, app-wide loading/error status), use **Zustand**. Don't add it, or any other state library, until that need actually exists, and don't use Redux, MobX or React Context as a global store.
+- Stores live in `src/frontend/stores/` as `use<Feature>Store.ts`, one store per feature (not one global store).
+- Stores hold UI state only. Secrets, API calls and persistent data stay in the main process; store actions call the preload IPC clients (`window.<feature>`) and keep the results.
+- Keep store logic testable: put state transitions in pure functions and cover them with property-based tests.
