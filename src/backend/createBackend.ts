@@ -21,6 +21,7 @@ import { CodingRuleService } from "./services/CodingRuleService";
 import { CodingService } from "./services/CodingService";
 import { ImportService } from "./services/ImportService";
 import { JournalService } from "./services/JournalService";
+import { ManualEntryService } from "./services/ManualEntryService";
 import { StagingService } from "./services/StagingService";
 import { TransferService } from "./services/TransferService";
 import { JsonFileTemplateStore } from "./templates/TemplateStore";
@@ -37,6 +38,7 @@ export interface Backend {
   readonly posting: BankPostingService;
   readonly codingRules: CodingRuleService;
   readonly transfers: TransferService;
+  readonly manualEntries: ManualEntryService;
   /** Closes every open client database. */
   dispose(): void;
 }
@@ -103,6 +105,7 @@ export const createBackend = (dataDirectory: string): Backend => {
     posting,
     codingRules,
     transfers,
+    manualEntries: new ManualEntryService(journal),
     dispose: () => pool.closeAll(),
   };
 };

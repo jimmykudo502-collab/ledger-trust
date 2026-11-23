@@ -748,3 +748,49 @@ tr.excluded td:last-child {
 .nowrap {
   white-space: nowrap;
 }
+
+/* Journal entries */
+
+.entry-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.8rem;
+  margin-top: 0.75rem;
+}
+
+.entry-card .data-table td {
+  border-bottom: 0;
+}
+
+.entry-lines input {
+  width: 100%;
+}
+
+.entry-lines .code-input {
+  width: 5.5rem;
+}
+
+.money-input {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  max-width: 9rem;
+}
+
+.totals-row td {
+  font-weight: 600;
+  border-top: 2px solid var(--border);
+}
+
+.balanced {
+  color: #3a9a5b;
+}
+
+.problem-list {
+  color: var(--danger);
+  margin: 0.5rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.date-field {
+  flex: 0 0 10rem;
+}

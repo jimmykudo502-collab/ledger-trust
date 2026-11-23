@@ -9,6 +9,7 @@ import { registerChartOfAccountsHandlers } from "./backend/ipc/ChartOfAccountsHa
 import { registerClientHandlers } from "./backend/ipc/ClientHandlers";
 import { registerCodingRuleHandlers } from "./backend/ipc/CodingRuleHandlers";
 import { registerImportHandlers } from "./backend/ipc/ImportHandlers";
+import { registerJournalEntryHandlers } from "./backend/ipc/JournalEntryHandlers";
 import { registerStagingHandlers } from "./backend/ipc/StagingHandlers";
 import { registerTransferHandlers } from "./backend/ipc/TransferHandlers";
 
@@ -59,6 +60,7 @@ registerImportHandlers(ipcMain, backend.imports);
 registerStagingHandlers(ipcMain, backend.staging, backend.coding, backend.posting);
 registerCodingRuleHandlers(ipcMain, backend.codingRules);
 registerTransferHandlers(ipcMain, backend.transfers);
+registerJournalEntryHandlers(ipcMain, backend.manualEntries);
 
 app.on("will-quit", () => {
   backend.dispose();
