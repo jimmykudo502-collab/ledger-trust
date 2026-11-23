@@ -5,6 +5,7 @@ import path from "node:path";
 import { ClientConnectionPool } from "../db/ClientConnectionPool";
 import { ClientDatabaseFactory } from "../db/ClientDatabaseFactory";
 import { ClientFileStore } from "../db/ClientFileStore";
+import type { TransactionRunner } from "../db/TransactionRunner";
 import { SqliteClientRepository } from "../repositories/SqliteClientRepository";
 
 /**
@@ -28,6 +29,10 @@ export class TempClientWorkspace {
     );
     this.clients = new SqliteClientRepository(this.fileStore, this.pool);
   }
+
+  /** Runs work in one transaction on a client's database. */
+  public readonly inTransaction: TransactionRunner = (clientId, work) =>
+    this.pool.get(clientId).transaction(work)();
 
   /** Closes every connection and deletes the folder. */
   public dispose(): void {

@@ -59,6 +59,11 @@ export interface BankAccount {
   readonly accountName: string;
   /** Whether anything has been imported into this tab. */
   readonly hasImports: boolean;
+  /**
+   * The linked account's balance from posted journal lines (FR-31), as
+   * debits minus credits in cents. Negative for a card that is owed.
+   */
+  readonly ledgerBalanceCents: number;
 }
 
 export const listBankAccountsRequestSchema = z.object({ clientId: clientIdSchema });

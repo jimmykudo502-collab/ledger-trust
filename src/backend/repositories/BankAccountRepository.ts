@@ -39,12 +39,15 @@ interface BankAccountRow {
   account_code: string;
   account_name: string;
   has_imports: number;
+  ledger_balance: number;
 }
 
 const SELECT_BANK_ACCOUNTS = `
   SELECT b.id, b.name, b.kind, b.account_id,
          a.code AS account_code, a.name AS account_name,
-         EXISTS (SELECT 1 FROM import_batches i WHERE i.bank_account_id = b.id) AS has_imports
+         EXISTS (SELECT 1 FROM import_batches i WHERE i.bank_account_id = b.id) AS has_imports,
+         (SELECT coalesce(sum(l.debit_cents - l.credit_cents), 0)
+            FROM journal_lines l WHERE l.account_id = b.account_id) AS ledger_balance
   FROM bank_accounts b JOIN accounts a ON a.id = b.account_id`;
 
 /**
@@ -122,4 +125,5 @@ const toBankAccount = (row: BankAccountRow): BankAccount => ({
   accountCode: row.account_code,
   accountName: row.account_name,
   hasImports: row.has_imports === 1,
+  ledgerBalanceCents: row.ledger_balance,
 });

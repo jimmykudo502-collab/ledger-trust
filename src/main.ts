@@ -54,7 +54,7 @@ registerChartOfAccountsHandlers(ipcMain, backend.chartOfAccounts);
 registerAccountTemplateHandlers(ipcMain, backend.accountTemplates);
 registerBankAccountHandlers(ipcMain, backend.bankAccounts);
 registerImportHandlers(ipcMain, backend.imports);
-registerStagingHandlers(ipcMain, backend.staging);
+registerStagingHandlers(ipcMain, backend.staging, backend.coding, backend.posting);
 
 app.on("will-quit", () => {
   backend.dispose();

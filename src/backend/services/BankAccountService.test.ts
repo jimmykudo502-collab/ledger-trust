@@ -79,7 +79,14 @@ describe("BankAccountService", () => {
       ledger: { mode: "new", code: "2100" },
     });
 
-    expect(tab).toMatchObject({ name: "Visa", kind: "credit_card", accountCode: "2100", accountName: "Visa", hasImports: false });
+    expect(tab).toMatchObject({
+      name: "Visa",
+      kind: "credit_card",
+      accountCode: "2100",
+      accountName: "Visa",
+      hasImports: false,
+      ledgerBalanceCents: 0,
+    });
     expect(chart.findByCode(clientId, "2100")).toMatchObject({ name: "Visa", type: "liability" });
   });
 
