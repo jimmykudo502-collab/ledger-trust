@@ -161,7 +161,7 @@ export function CodingGrid({ clientId, bankAccount, bankAccounts, rows, accounts
             const posted = row.status === "posted";
             return (
               <tr key={row.id} className={posted ? "posted-row" : ""}>
-                <td>{row.date}</td>
+                <td className="nowrap">{row.date}</td>
                 <td>{row.description}</td>
                 <td className="money">{row.amountCents > 0 ? formatCents(row.amountCents) : ""}</td>
                 <td className="money">{row.amountCents < 0 ? formatCents(-row.amountCents) : ""}</td>

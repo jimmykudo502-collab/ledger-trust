@@ -168,7 +168,7 @@ export function TransferReview({ clientId }: TransferReviewProps) {
                 />
               </td>
               <td>{row.bankAccountName}</td>
-              <td>{row.date}</td>
+              <td className="nowrap">{row.date}</td>
               <td>{row.description}</td>
               <td className="money">{signed(row.amountCents)}</td>
               <td>
@@ -244,10 +244,10 @@ function PairTable({ pairs, empty, actionLabel, onAction }: PairTableProps) {
         {pairs.map((pair) => (
           <tr key={`${pair.from.rowId}-${pair.to.rowId}`}>
             <td>{pair.from.bankAccountName}</td>
-            <td>{pair.from.date}</td>
+            <td className="nowrap">{pair.from.date}</td>
             <td>{pair.from.description}</td>
             <td>{pair.to.bankAccountName}</td>
-            <td>
+            <td className="nowrap">
               {pair.to.date}
               {pair.daysApart > 0 && <span className="muted"> (+{pair.daysApart}d)</span>}
             </td>

@@ -744,3 +744,7 @@ tr.excluded td:last-child {
 .section-header h4 {
   margin: 0;
 }
+
+.nowrap {
+  white-space: nowrap;
+}

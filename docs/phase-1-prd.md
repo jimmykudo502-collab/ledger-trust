@@ -134,7 +134,8 @@ Core entities: Client, Account, BankAccount (linked to an Account), ImportBatch,
 - Imports: rows that can't be read (bad date or amount) are shown with the reason and never staged. An import can be removed from staging until any of its rows is posted. Bank tabs post to an asset account, credit card tabs to a liability account.
 - Bank reconciliation: after Phase 1, once transactions are being booked.
 - Unlocking: a locked year can be unlocked.
-- Transfer matching window: about 3 to 4 days.
+- Transfer matching window: about 3 to 4 days (implemented as at most 4 days apart).
+- Transfer matching: after every import, pairs whose rows each have exactly one possible partner are matched automatically and both sides coded to Bank Transfer Control; rows with several possible partners are offered as suggestions on the Transfers tab. Only uncoded staged rows, or rows already coded to the control account, are considered, so rows coded or posted to another account are never changed. Any match can be undone.
 - New clients: blank chart of accounts, with a master template that can be imported.
 - Master template: one master chart of accounts kept in the app. The user saves any client's chart (minus system accounts) as the master and imports it into other clients; codes the client already uses are skipped. Importing a template from Excel may follow with the import phase.
 - Fiscal year-end is stored as the full date of the current fiscal year's end (`YYYY-MM-DD`). When rolling forward, a February 29 year-end becomes the last day of February in non-leap years.

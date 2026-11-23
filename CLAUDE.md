@@ -34,7 +34,7 @@ The full requirements are in [docs/phase-1-prd.md](docs/phase-1-prd.md). Read it
 2. Clients and chart of accounts (done)
 3. Bank account tabs and import (done)
 4. Coding grid and posting (done)
-5. Transfer matching and control account review
+5. Transfer matching and control account review (done)
 6. Manual journal entries
 7. Reports: trial balance, general ledger, balance sheet, income statement
 8. Period lock, year-end close and roll-forward
@@ -82,7 +82,7 @@ src/
     templates/       Master chart of accounts template store (JSON file)
     import/          SpreadsheetReader (SheetJS), columnDetection, rowParsing,
                      importDates, duplicates: pure import logic used by ImportService
-    posting/         bankEntryLines (FR-16 debit/credit rule) and pickRule (FR-18)
+    posting/         bankEntryLines (FR-16), pickRule (FR-18), findTransferPairs (FR-19)
     ipc/             Thin handlers registered via handleValidated()
     testing/         Test helpers, e.g. TempClientWorkspace
   frontend/          Renderer side
