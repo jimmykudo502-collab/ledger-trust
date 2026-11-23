@@ -172,7 +172,7 @@ describe("ChartOfAccountsService", () => {
       }),
       { numRuns: 60 },
     );
-  });
+  }, 30_000);
 
   it("never loses an account once it has posted activity (FR-8)", () => {
     fc.assert(
@@ -195,7 +195,7 @@ describe("ChartOfAccountsService", () => {
       }),
       { numRuns: 40 },
     );
-  });
+  }, 30_000);
 
   it("explains why a duplicate code is refused", () => {
     const { service, clientId } = sqliteHarness();

@@ -93,7 +93,7 @@ describe("FiscalYearService (FR-26 to FR-28)", () => {
           for (const row of next.rows) {
             if (row.type === "revenue" || row.type === "expense") expect(row.openingCents).toBe(0);
           }
-          expect(next.rows.find((row) => row.accountId === re)?.openingCents ?? 0).toBe(-netIncome);
+          expect(next.rows.find((row) => row.accountId === re)?.openingCents ?? 0).toBe(0 - netIncome);
           // Balance sheet balances carry forward, and nothing is left unclosed.
           const bs = reports.balanceSheet(clientId, { from: "2027-01-01", to: "2027-01-31" });
           expect(bs.currentEarningsCents).toBe(0);
