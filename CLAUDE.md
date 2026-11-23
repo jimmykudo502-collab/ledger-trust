@@ -35,11 +35,11 @@ The full requirements are in [docs/phase-1-prd.md](docs/phase-1-prd.md). Read it
 3. Bank account tabs and import (done)
 4. Coding grid and posting (done)
 5. Transfer matching and control account review (done)
-6. Manual journal entries
-7. Reports: trial balance, general ledger, balance sheet, income statement
-8. Period lock, year-end close and roll-forward
-9. PDF and Excel export
-10. Testing with made-up client data before any real files are used
+6. Manual journal entries (done)
+7. Reports: trial balance, general ledger, balance sheet, income statement (done)
+8. Period lock, year-end close and roll-forward (done)
+9. PDF and Excel export (done)
+10. Testing with made-up client data before any real files are used (done: demo client + `src/backend/endToEnd.test.ts`)
 
 Treat each step as a phase of a multi-phase plan (see Workflow). Out of scope for Phase 1: A/R and A/P aging, invoicing, payroll, sales tax, inventory, multi-user, cloud sync, bank feeds, bank reconciliation and multi-currency.
 
@@ -83,6 +83,9 @@ src/
     import/          SpreadsheetReader (SheetJS), columnDetection, rowParsing,
                      importDates, duplicates: pure import logic used by ImportService
     posting/         bankEntryLines (FR-16), pickRule (FR-18), findTransferPairs (FR-19)
+    reports/         Pure report builders over per-account balances (FR-29 to FR-31)
+    exports/         ReportDocument layouts, HTML/Excel renderers, ElectronPdfPrinter (FR-32)
+    demo/            Made-up demo client data and DemoClientService (step 10)
     ipc/             Thin handlers registered via handleValidated()
     testing/         Test helpers, e.g. TempClientWorkspace
   frontend/          Renderer side
@@ -101,6 +104,8 @@ Vite configs: `vite.main.config.ts`, `vite.preload.config.ts`, `vite.renderer.co
 - Tables are `STRICT`; money columns are `INTEGER` cents; dates are `YYYY-MM-DD` text checked with `date(x) IS x`. Journal lines hold a debit or a credit, never both.
 - Every journal entry goes through `JournalService.post`, which checks balance, one-sided lines and real accounts (SQLite can't check a multi-row invariant at commit). Never insert journal rows any other way.
 - Work that spans repositories (e.g. a journal entry plus its staged row's status) runs inside the injected `TransactionRunner`, so it all commits or all rolls back.
+- `FiscalYearService` is the journal's `PeriodGuard`: nothing dated in a locked fiscal year can be posted, replaced or deleted. Only the year-end close/reopen bypass it (`postClosingEntry`, `deleteClosingEntry`).
+- Reports never store anything: every report comes from `ReportRepository.balances` (opening before the range, period debits/credits, closing) and `ledgerLines`. Year-end closing entries dated inside the range are left out of period figures unless `includeClosingEntries` is set; the income statement always leaves them out.
 
 ### Adding a new IPC feature
 

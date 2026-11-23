@@ -143,8 +143,16 @@ Core entities: Client, Account, BankAccount (linked to an Account), ImportBatch,
 
 ### Still open
 
-1. First client's fiscal year-end date.
-2. Unlocked years: when a rolled-forward year is unlocked and changed, how should the next year's opening balances update?
+1. First client's fiscal year-end date (entered per client in the app).
+
+### Answered during the build
+
+- Unlocked years (was open question 3): opening balances are never copied; every report computes them from the one continuous journal, so they update automatically. Only the most recent locked year can be unlocked, and unlocking a closed year removes its closing entry so the year can be changed and closed again.
+- Year-end close posts one entry on the year-end date that zeroes revenue and expense accounts against a chosen retained earnings (equity) account, then locks the year. A year can't be closed while it has unposted bank rows, or before an earlier year with entries is closed.
+- Reversing entries swap debits and credits, are dated in an open period, and stay linked to the original entry.
+- Reports: the balance sheet shows unclosed revenue less expenses as "current earnings", so it always balances. Year-end closing entries are excluded from period figures by default so a full-year income statement still shows the year's activity.
+- Exports: PDF via Electron print-to-PDF (Letter size) and Excel via SheetJS, with amounts as numbers; every export shows client name, report title and period.
+- Testing: a "Create demo client (made-up data)" button and an end-to-end test exercise the whole workflow without real client files.
 
 ## 10. Suggested build order
 

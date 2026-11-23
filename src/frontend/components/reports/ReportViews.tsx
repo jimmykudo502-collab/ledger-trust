@@ -87,7 +87,7 @@ interface GeneralLedgerViewProps {
 export function GeneralLedgerView({ report, accounts, accountId, onAccountChange, isLocked, onReverse }: GeneralLedgerViewProps) {
   return (
     <>
-      <label className="field inline-field">
+      <label className="inline-field">
         <span>Account</span>
         <select value={accountId ?? ""} onChange={(event) => onAccountChange(event.target.value === "" ? null : Number(event.target.value))}>
           <option value="">All accounts</option>

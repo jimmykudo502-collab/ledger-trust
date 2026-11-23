@@ -159,7 +159,11 @@ export function EntryEditor({ clientId, accounts, entry, onSaved, onClose }: Ent
             <td className="money">{formatCents(check.debitCents)}</td>
             <td className="money">{formatCents(check.creditCents)}</td>
             <td colSpan={2} className={difference === 0 ? "balanced" : "problem"}>
-              {difference === 0 ? "Balanced" : `Out of balance by ${formatCents(Math.abs(difference))}`}
+              {check.debitCents === 0 && check.creditCents === 0
+                ? ""
+                : difference === 0
+                  ? "Balanced"
+                  : `Out of balance by ${formatCents(Math.abs(difference))}`}
             </td>
           </tr>
         </tfoot>

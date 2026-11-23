@@ -427,10 +427,10 @@ select:focus {
 
 .tab-bar {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.25rem;
   border-bottom: 1px solid var(--border);
   margin-bottom: 1rem;
-  overflow-x: auto;
 }
 
 .tab {
