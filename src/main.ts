@@ -2,6 +2,8 @@ import { app, BrowserWindow, ipcMain } from "electron";
 import dotenv from "dotenv";
 import path from "node:path";
 import started from "electron-squirrel-startup";
+import { createBackend } from "./backend/createBackend";
+import { registerClientHandlers } from "./backend/ipc/ClientHandlers";
 import { registerHelloWorldHandlers } from "./backend/ipc/HelloWorldHandlers";
 
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
@@ -14,8 +16,11 @@ if (started) {
 const createWindow = () => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1280,
+    height: 820,
+    minWidth: 900,
+    minHeight: 600,
+    title: "Ledger Trust",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
     },
@@ -34,7 +39,18 @@ const createWindow = () => {
   mainWindow.webContents.openDevTools();
 };
 
+// LEDGER_TRUST_DATA_DIR lets tests and demos use a scratch folder instead of
+// the real client data.
+const backend = createBackend(
+  process.env.LEDGER_TRUST_DATA_DIR ?? app.getPath("userData"),
+);
+
 registerHelloWorldHandlers(ipcMain);
+registerClientHandlers(ipcMain, backend.clients);
+
+app.on("will-quit", () => {
+  backend.dispose();
+});
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.

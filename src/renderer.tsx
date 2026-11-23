@@ -2,7 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
 import "./index.css";
-import { HelloWorld } from "./frontend/components/HelloWorld";
+import { App } from "./frontend/components/App";
 
 const app = document.querySelector<HTMLDivElement>("#app");
 
@@ -12,6 +12,6 @@ if (!app) {
 
 createRoot(app).render(
   <StrictMode>
-    <HelloWorld />
+    <App />
   </StrictMode>
 );

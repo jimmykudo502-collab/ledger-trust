@@ -56,6 +56,24 @@ export const clientSummarySchema = z.object({
   createdAt: z.string(),
 });
 
+/** IPC request: rename a client. */
+export const renameClientRequestSchema = z.object({
+  clientId: clientIdSchema,
+  name: clientNameSchema,
+});
+
+/** IPC request: change a client's fiscal year-end. */
+export const setFiscalYearEndRequestSchema = z.object({
+  clientId: clientIdSchema,
+  fiscalYearEnd: fiscalYearEndSchema,
+});
+
+/** IPC request: archive or unarchive a client. */
+export const setArchivedRequestSchema = z.object({
+  clientId: clientIdSchema,
+  archived: z.boolean(),
+});
+
 export type ClientId = z.infer<typeof clientIdSchema>;
 export type FiscalYearEnd = z.infer<typeof fiscalYearEndSchema>;
 export type CreateClientInput = z.infer<typeof createClientInputSchema>;
@@ -81,3 +99,18 @@ export const monthName = (month: number): string => MONTH_NAMES[month - 1];
  */
 export const formatFiscalYearEnd = ({ month, day }: FiscalYearEnd): string =>
   `${monthName(month)} ${day}`;
+
+/**
+ * The client-list API the preload script exposes to the renderer as
+ * `window.clients`.
+ */
+export interface ClientsApi {
+  list(): Promise<ClientSummary[]>;
+  create(input: CreateClientInput): Promise<ClientSummary>;
+  rename(clientId: ClientId, name: string): Promise<ClientSummary>;
+  setFiscalYearEnd(
+    clientId: ClientId,
+    fiscalYearEnd: FiscalYearEnd,
+  ): Promise<ClientSummary>;
+  setArchived(clientId: ClientId, archived: boolean): Promise<ClientSummary>;
+}
