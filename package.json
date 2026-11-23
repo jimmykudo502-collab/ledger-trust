@@ -30,6 +30,7 @@
     "@electron-forge/plugin-fuses": "^7.11.2",
     "@electron-forge/plugin-vite": "^7.11.2",
     "@electron/fuses": "^1.8.0",
+    "@types/better-sqlite3": "^9.6.0",
     "@types/electron-squirrel-startup": "^1.0.2",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
@@ -45,6 +46,7 @@
   },
   "dependencies": {
     "@openrouter/agent": "^0.11.0",
+    "better-sqlite3": "13.2.0",
     "dotenv": "^18.0.6",
     "electron-squirrel-startup": "^1.0.1",
     "react": "^19.2.0",

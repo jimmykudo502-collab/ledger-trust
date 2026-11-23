@@ -11,7 +11,11 @@ const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
   },
-  rebuildConfig: {},
+  rebuildConfig: {
+    // better-sqlite3 ships Node-API prebuilds that load in both Node and
+    // Electron, so it never needs a node-gyp rebuild.
+    ignoreModules: ['better-sqlite3'],
+  },
   makers: [
     new MakerSquirrel({}),
     new MakerZIP({}, ['darwin']),
