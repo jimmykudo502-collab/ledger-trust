@@ -58,6 +58,21 @@ describe("sample imports", () => {
     expect(net(rows.map((row) => row.amountCents))).toBe(-83122);
   });
 
+  it("reads the Q1 savings and Visa write-ups that pair with the chequing sample", () => {
+    const read = (file: string, kind: "bank" | "credit_card") => {
+      const [sheet] = reader.readFile(fs.readFileSync(path.join(SAMPLES, file)));
+      const rows = parseRows(sheet.rows, detectMapping(sheet.rows, kind).mapping);
+      expect(rows.every((row) => row.problem === null)).toBe(true);
+      return rows;
+    };
+    const savings = read("made-up-rental-savings-q1-2026.xlsx", "bank");
+    const visa = read("made-up-rental-visa-q1-2026.xlsx", "credit_card");
+
+    expect(savings.filter((row) => row.description.startsWith("TRANSFER")).map((row) => row.amountCents)).toEqual([50000, 50000, 50000]);
+    // Card payments are money into the card's account.
+    expect(visa.filter((row) => row.description.startsWith("PAYMENT")).map((row) => row.amountCents)).toEqual([27555, 31110, 34665]);
+  });
+
   it("reads the pasted savings rows with day-first dates", () => {
     const [sheet] = reader.readText(fs.readFileSync(path.join(SAMPLES, "made-up-savings-paste.txt"), "utf8"));
     const { mapping, dateOrderAmbiguous } = detectMapping(sheet.rows, "bank");
