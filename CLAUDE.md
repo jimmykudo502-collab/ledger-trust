@@ -57,6 +57,7 @@ Package manager is **pnpm** (see `pnpm-lock.yaml`, `pnpm-workspace.yaml`). `node
 - `pnpm exec tsc --noEmit` — type-check (no dedicated script)
 - `pnpm test` — run all tests once (Vitest + fast-check); `pnpm test:watch` for watch mode
 - `pnpm package` / `pnpm make` — build distributables into `out/`
+- `pnpm run install-app` — build and install the app for the current Windows user (`%LOCALAPPDATA%\Programs\Ledger Trust`) with "Ledger Trust" Desktop and Start menu shortcuts (`scripts/install-local.ps1`). Re-run after changes to update the installed copy. The packaged exe is named Ledger Trust, but package.json's `name` stays `agentobi` so client data stays in `%APPDATA%gentobi`; don't rename it without migrating that folder.
 
 Vitest is pinned to 3.x because the app uses Vite 5 (Vitest 4+ requires Vite 6+). Test config lives in `vitest.config.mts`.
 

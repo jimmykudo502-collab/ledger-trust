@@ -13,6 +13,14 @@ import { FuseV1Options, FuseVersion } from '@electron/fuses';
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
+    // Window/exe naming only. package.json's name stays "agentobi", so the
+    // data folder (%APPDATA%gentobi) and existing clients are unchanged.
+    name: 'Ledger Trust',
+    executableName: 'LedgerTrust',
+    win32metadata: {
+      ProductName: 'Ledger Trust',
+      FileDescription: 'Ledger Trust bookkeeping',
+    },
   },
   rebuildConfig: {
     // better-sqlite3 ships Node-API prebuilds that load in both Node and
