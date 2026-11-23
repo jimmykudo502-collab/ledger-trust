@@ -1,5 +1,4 @@
 export const APP_CHANNELS = {
-  HELLO_WORLD: "app:helloWorld",
   CLIENTS_LIST: "app:clientsList",
   CLIENTS_CREATE: "app:clientsCreate",
   CLIENTS_RENAME: "app:clientsRename",

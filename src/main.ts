@@ -6,7 +6,6 @@ import { createBackend } from "./backend/createBackend";
 import { registerAccountTemplateHandlers } from "./backend/ipc/AccountTemplateHandlers";
 import { registerChartOfAccountsHandlers } from "./backend/ipc/ChartOfAccountsHandlers";
 import { registerClientHandlers } from "./backend/ipc/ClientHandlers";
-import { registerHelloWorldHandlers } from "./backend/ipc/HelloWorldHandlers";
 
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
@@ -47,7 +46,6 @@ const backend = createBackend(
   process.env.LEDGER_TRUST_DATA_DIR ?? app.getPath("userData"),
 );
 
-registerHelloWorldHandlers(ipcMain);
 registerClientHandlers(ipcMain, backend.clients);
 registerChartOfAccountsHandlers(ipcMain, backend.chartOfAccounts);
 registerAccountTemplateHandlers(ipcMain, backend.accountTemplates);

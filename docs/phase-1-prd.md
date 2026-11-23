@@ -41,7 +41,7 @@ A local desktop app (Electron.js) for a bookkeeper who keeps the books of other 
 - **FR-4** One chart of accounts per client, with as many accounts as the user wants to create. A new client starts with a blank chart of accounts, and a master template can be imported to populate it.
 - **FR-5** Each account has a code, a name, and a type (asset, liability, equity, revenue, expense). The type is needed to build the balance sheet and income statement.
 - **FR-6** If a code is typed in the code column that does not exist yet, the app creates the account (prompting for its name and type).
-- **FR-7** Every client includes a Bank Transfer Control account.
+- **FR-7** Every client includes a Bank Transfer Control account. It is created automatically as an asset with code 1999; it can be renamed or recoded but not deleted or retyped.
 - **FR-8** Proposed: accounts with posted activity cannot be deleted.
 
 ### 4.3 Bank accounts (tabs)
@@ -135,12 +135,14 @@ Core entities: Client, Account, BankAccount (linked to an Account), ImportBatch,
 - Unlocking: a locked year can be unlocked.
 - Transfer matching window: about 3 to 4 days.
 - New clients: blank chart of accounts, with a master template that can be imported.
+- Master template: one master chart of accounts kept in the app. The user saves any client's chart (minus system accounts) as the master and imports it into other clients; codes the client already uses are skipped. Importing a template from Excel may follow with the import phase.
+- Fiscal year-end is stored as a month and day; February 29 means the last day of February in non-leap years.
+- Accounts with posted entries keep their type, so past statements don't change.
 
 ### Still open
 
 1. First client's fiscal year-end date.
-2. Master template: which accounts it holds and how it is stored and imported.
-3. Unlocked years: when a rolled-forward year is unlocked and changed, how should the next year's opening balances update?
+2. Unlocked years: when a rolled-forward year is unlocked and changed, how should the next year's opening balances update?
 
 ## 10. Suggested build order
 

@@ -13,7 +13,7 @@ The full requirements are in [docs/phase-1-prd.md](docs/phase-1-prd.md). Read it
 - Electron (Electron Forge + Vite), React 19, TypeScript. Package name is `agentobi`. Windows first.
 - Storage: SQLite via `better-sqlite3`, **one database file per client**.
 - Spreadsheets: SheetJS to read .xlsx/.ods imports and write Excel reports. PDFs use Electron's built-in print-to-PDF.
-- Validation: `zod`.
+- Validation: `zod`. Shared UI state: `zustand` (see State management).
 - `better-sqlite3` (13.x) ships Node-API prebuilds that load in both Node (Vitest) and Electron, so there is no native rebuild step: Forge's `rebuildConfig.ignoreModules` skips it and `vite.main.config.ts` marks it external. Client databases use SQLite's default rollback journal, not WAL, so a closed client is one file that can be copied as a backup. Known gap: the Forge Vite plugin only packages `.vite/`, so `pnpm package`/`make` builds do not yet include `better-sqlite3`; fix this before distributing (phase 9).
 - SheetJS is not installed yet; it arrives with the import phase.
 - `@openrouter/agent` is installed from earlier scaffolding but is **not** part of Phase 1. Don't build features on it, since client data must never leave the machine.
@@ -31,7 +31,7 @@ The full requirements are in [docs/phase-1-prd.md](docs/phase-1-prd.md). Read it
 ### Phase 1 build order
 
 1. Project setup and database (done)
-2. Clients and chart of accounts
+2. Clients and chart of accounts (done)
 3. Bank account tabs and import
 4. Coding grid and posting
 5. Transfer matching and control account review
@@ -52,7 +52,7 @@ Real client financial files must never be committed, logged or pasted into promp
 Package manager is **pnpm** (see `pnpm-lock.yaml`, `pnpm-workspace.yaml`). `nodeLinker: hoisted` in `pnpm-workspace.yaml` is required by Electron Forge; packages with install scripts must be listed under `allowBuilds`.
 
 - `pnpm install` — install dependencies
-- `pnpm start` — run the app in dev mode (Vite dev server + Electron, DevTools open)
+- `pnpm start` — run the app in dev mode (Vite dev server + Electron, DevTools in a separate window). Set `LEDGER_TRUST_DATA_DIR` to use a scratch data folder instead of `%APPDATA%gentobi`.
 - `pnpm lint` — ESLint over `.ts`/`.tsx`
 - `pnpm exec tsc --noEmit` — type-check (no dedicated script)
 - `pnpm test` — run all tests once (Vitest + fast-check); `pnpm test:watch` for watch mode
@@ -67,15 +67,23 @@ src/
   main.ts            Electron main process: creates the window, registers IPC handlers
   preload.ts         Preload script: exposes renderer-facing clients via contextBridge
   renderer.tsx       React entry point (mounts into #app in index.html)
-  common/ipc/        Code shared by main and renderer (IPC channel names)
+  common/            Shared by main and renderer, no Node/Electron imports
+    ipc/             APP_CHANNELS and the IpcResult envelope
+    <feature>/       zod schemas, types and the window API interface per feature
   backend/           Main-process only
-    services/        Business logic as classes (e.g. HelloWorldService)
-    db/              SQLite access: ClientDatabaseFactory opens a client file and
-                     runs MigrationRunner over clientMigrations.ts
-    ipc/             ipcMain.handle registrations that delegate to services
+    createBackend.ts Composition root: builds services and their dependencies
+    errors.ts        UserFacingError: messages safe to show in the UI
+    services/        Business logic as classes (ClientService, ChartOfAccountsService, ...)
+    repositories/    Storage interfaces with SQLite and in-memory implementations
+    db/              ClientFileStore (one <uuid>.sqlite per client), ClientConnectionPool,
+                     ClientDatabaseFactory, MigrationRunner, clientMigrations.ts
+    templates/       Master chart of accounts template store (JSON file)
+    ipc/             Thin handlers registered via handleValidated()
+    testing/         Test helpers, e.g. TempClientWorkspace
   frontend/          Renderer side
-    ipc/             Preload clients wrapping ipcRenderer.invoke, exposed on window
-    components/      React components
+    ipc/             Preload clients built on invokeResult(), exposed on window
+    stores/          Zustand stores plus their pure, tested logic
+    components/      React components, grouped by feature
 global.d.ts          Types for the window.* APIs exposed by preload
 ```
 
@@ -89,14 +97,15 @@ Vite configs: `vite.main.config.ts`, `vite.preload.config.ts`, `vite.renderer.co
 
 ### Adding a new IPC feature
 
-Follow the existing HelloWorld slice end to end:
+Follow the Clients slice (`ClientService` → `ClientHandlers` → `ClientsClient` → `useClientStore`) end to end:
 
-1. Add a channel name to `APP_CHANNELS` in `src/common/ipc/AppChannels.ts` (format `app:camelCaseName`).
-2. Implement the logic in a service class under `src/backend/services/`.
-3. Register a handler in `src/backend/ipc/<Feature>Handlers.ts` (`register<Feature>Handlers(ipcMain)`) and call it from `src/main.ts`.
-4. Add a client in `src/frontend/ipc/<Feature>Client.ts` that calls `ipcRenderer.invoke` and an `expose<Feature>Client()` that uses `contextBridge.exposeInMainWorld`; call it from `src/preload.ts`.
-5. Declare the exposed API on `Window` in `global.d.ts`.
-6. Use it from React via `window.<feature>`.
+1. Put zod request schemas, types and a `<Feature>Api` interface in `src/common/<feature>/`.
+2. Add channel names to `APP_CHANNELS` in `src/common/ipc/AppChannels.ts` (format `app:camelCaseName`).
+3. Implement the logic in a service class under `src/backend/services/` with dependencies injected; wire it in `createBackend.ts`. Throw `UserFacingError` for messages the user should see.
+4. Register handlers in `src/backend/ipc/<Feature>Handlers.ts` with `handleValidated(ipcMain, channel, schema, fn)`, which validates the request and returns an `IpcResult`; call `register<Feature>Handlers(ipcMain, service)` from `src/main.ts`.
+5. Add `src/frontend/ipc/<Feature>Client.ts` implementing the `<Feature>Api` with `invokeResult()` (which throws the user-facing message) plus `expose<Feature>Client()`; call it from `src/preload.ts`.
+6. Declare it on `Window` in `global.d.ts` as `import("./src/common/<feature>/...").<Feature>Api` (no top-level imports there).
+7. Use it from React via `window.<feature>`. Preload changes need a full app restart, not just a reload.
 
 ## Workflow
 
@@ -128,7 +137,7 @@ Keep edits short and specific, put them in the matching section, remove anything
 
 ### Testing
 
-- Use **property-based testing** for logic: state the properties (invariants) that must hold for all inputs and let the framework generate the inputs, rather than relying only on a few hand-picked examples. Use [fast-check](https://github.com/dubzzz/fast-check) with Vitest (`import * as fc from "fast-check"`). See `src/backend/services/HelloWorldService.test.ts` for the pattern.
+- Use **property-based testing** for logic: state the properties (invariants) that must hold for all inputs and let the framework generate the inputs, rather than relying only on a few hand-picked examples. Use [fast-check](https://github.com/dubzzz/fast-check) with Vitest (`import * as fc from "fast-check"`). See `src/backend/services/ChartOfAccountsService.test.ts` for the pattern, including a model-based test that checks the SQLite and in-memory repositories behave the same.
 - Typical properties: round-trips (`parse(serialize(x)) === x`), invariants (totals never negative, output always matches the zod schema), idempotence, and equivalence with a simpler reference implementation.
 - Add example-based tests alongside for specific known cases and regressions.
 - Put tests next to the code as `*.test.ts`. Backend services are classes with injected dependencies so they can be tested without Electron or network calls.
