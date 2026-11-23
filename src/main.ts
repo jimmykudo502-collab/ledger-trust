@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import path from "node:path";
 import started from "electron-squirrel-startup";
 import { createBackend } from "./backend/createBackend";
+import { registerChartOfAccountsHandlers } from "./backend/ipc/ChartOfAccountsHandlers";
 import { registerClientHandlers } from "./backend/ipc/ClientHandlers";
 import { registerHelloWorldHandlers } from "./backend/ipc/HelloWorldHandlers";
 
@@ -35,8 +36,8 @@ const createWindow = () => {
     );
   }
 
-  // Open the DevTools.
-  mainWindow.webContents.openDevTools();
+  // Open the DevTools in their own window so the app keeps its full width.
+  mainWindow.webContents.openDevTools({ mode: "detach" });
 };
 
 // LEDGER_TRUST_DATA_DIR lets tests and demos use a scratch folder instead of
@@ -47,6 +48,7 @@ const backend = createBackend(
 
 registerHelloWorldHandlers(ipcMain);
 registerClientHandlers(ipcMain, backend.clients);
+registerChartOfAccountsHandlers(ipcMain, backend.chartOfAccounts);
 
 app.on("will-quit", () => {
   backend.dispose();

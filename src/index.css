@@ -312,3 +312,100 @@ fieldset.field-row legend {
   gap: 0.5rem;
   margin-top: 1rem;
 }
+
+/* Panels and tables */
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.panel-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.search {
+  width: 220px;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th {
+  text-align: left;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  font-weight: 600;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.data-table td {
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.data-table tbody tr:hover {
+  background: var(--bg);
+}
+
+.data-table .badge {
+  margin-left: 0.5rem;
+}
+
+.type-col {
+  width: 7rem;
+}
+
+.badge {
+  white-space: nowrap;
+}
+
+.code-col {
+  width: 7rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.row-actions {
+  text-align: right;
+  white-space: nowrap;
+  width: 1%;
+}
+
+.row-actions .button + .button {
+  margin-left: 0.35rem;
+}
+
+.field-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.code-field {
+  flex: 0 0 7rem;
+  min-width: 0;
+}
+
+.field input,
+.field select {
+  width: 100%;
+}

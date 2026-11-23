@@ -5,4 +5,5 @@ interface Window {
     runHelloWorld: () => Promise<string>;
   };
   clients: import("./src/common/clients/clientSchemas").ClientsApi;
+  chartOfAccounts: import("./src/common/accounts/accountSchemas").ChartOfAccountsApi;
 }

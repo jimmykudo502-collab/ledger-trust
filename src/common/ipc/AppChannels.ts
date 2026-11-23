@@ -5,4 +5,8 @@ export const APP_CHANNELS = {
   CLIENTS_RENAME: "app:clientsRename",
   CLIENTS_SET_FISCAL_YEAR_END: "app:clientsSetFiscalYearEnd",
   CLIENTS_SET_ARCHIVED: "app:clientsSetArchived",
+  ACCOUNTS_LIST: "app:accountsList",
+  ACCOUNTS_CREATE: "app:accountsCreate",
+  ACCOUNTS_UPDATE: "app:accountsUpdate",
+  ACCOUNTS_DELETE: "app:accountsDelete",
 } as const;
