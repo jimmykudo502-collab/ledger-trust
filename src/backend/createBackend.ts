@@ -3,13 +3,17 @@ import path from "node:path";
 import { ClientConnectionPool } from "./db/ClientConnectionPool";
 import { ClientDatabaseFactory } from "./db/ClientDatabaseFactory";
 import { ClientFileStore } from "./db/ClientFileStore";
+import { SpreadsheetReader } from "./import/SpreadsheetReader";
 import { SqliteBankAccountRepository } from "./repositories/BankAccountRepository";
 import { SqliteAccountRepository } from "./repositories/SqliteAccountRepository";
 import { SqliteClientRepository } from "./repositories/SqliteClientRepository";
+import { SqliteStagingRepository } from "./repositories/StagingRepository";
 import { AccountTemplateService } from "./services/AccountTemplateService";
 import { BankAccountService } from "./services/BankAccountService";
 import { ChartOfAccountsService } from "./services/ChartOfAccountsService";
 import { ClientService } from "./services/ClientService";
+import { ImportService } from "./services/ImportService";
+import { StagingService } from "./services/StagingService";
 import { JsonFileTemplateStore } from "./templates/TemplateStore";
 
 /** The wired-up backend services plus a way to shut them down. */
@@ -18,6 +22,8 @@ export interface Backend {
   readonly chartOfAccounts: ChartOfAccountsService;
   readonly accountTemplates: AccountTemplateService;
   readonly bankAccounts: BankAccountService;
+  readonly imports: ImportService;
+  readonly staging: StagingService;
   /** Closes every open client database. */
   dispose(): void;
 }
@@ -51,11 +57,17 @@ export const createBackend = (dataDirectory: string): Backend => {
     chartOfAccounts,
   );
 
+  const stagingFor = (clientId: string) => new SqliteStagingRepository(pool.get(clientId));
+  const imports = new ImportService(new SpreadsheetReader(), bankAccounts, stagingFor);
+  const staging = new StagingService(stagingFor, bankAccounts);
+
   return {
     clients,
     chartOfAccounts,
     accountTemplates,
     bankAccounts,
+    imports,
+    staging,
     dispose: () => pool.closeAll(),
   };
 };

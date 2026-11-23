@@ -7,6 +7,8 @@ import { registerAccountTemplateHandlers } from "./backend/ipc/AccountTemplateHa
 import { registerBankAccountHandlers } from "./backend/ipc/BankAccountHandlers";
 import { registerChartOfAccountsHandlers } from "./backend/ipc/ChartOfAccountsHandlers";
 import { registerClientHandlers } from "./backend/ipc/ClientHandlers";
+import { registerImportHandlers } from "./backend/ipc/ImportHandlers";
+import { registerStagingHandlers } from "./backend/ipc/StagingHandlers";
 
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
@@ -51,6 +53,8 @@ registerClientHandlers(ipcMain, backend.clients);
 registerChartOfAccountsHandlers(ipcMain, backend.chartOfAccounts);
 registerAccountTemplateHandlers(ipcMain, backend.accountTemplates);
 registerBankAccountHandlers(ipcMain, backend.bankAccounts);
+registerImportHandlers(ipcMain, backend.imports);
+registerStagingHandlers(ipcMain, backend.staging);
 
 app.on("will-quit", () => {
   backend.dispose();
