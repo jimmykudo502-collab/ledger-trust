@@ -251,8 +251,7 @@ h3 {
   flex: 1;
 }
 
-.field > span,
-fieldset legend {
+.field > span:not(.hint) {
   font-size: 0.85rem;
   color: var(--muted);
 }
@@ -271,19 +270,6 @@ input:focus,
 select:focus {
   outline: 2px solid var(--accent);
   outline-offset: -1px;
-}
-
-fieldset.field-row {
-  border: 0;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  gap: 0.75rem;
-}
-
-fieldset.field-row legend {
-  padding: 0;
-  margin-bottom: 0.25rem;
 }
 
 /* Modal */

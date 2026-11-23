@@ -45,7 +45,7 @@ const sqliteHarness = (): Harness => {
   );
   const client = new ClientService(workspace.clients, [service]).create({
     name: "Made-up Rentals",
-    fiscalYearEnd: { month: 12, day: 31 },
+    fiscalYearEnd: "2026-12-31",
   });
   const db: Database = workspace.pool.get(client.id);
   return {

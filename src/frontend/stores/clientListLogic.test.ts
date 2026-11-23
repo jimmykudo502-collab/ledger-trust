@@ -7,10 +7,7 @@ import { sortClients, upsertClient, visibleClients } from "./clientListLogic";
 const clientArb: fc.Arbitrary<ClientSummary> = fc.record({
   id: fc.uuid(),
   name: fc.string({ minLength: 1, maxLength: 20 }),
-  fiscalYearEnd: fc.record({
-    month: fc.integer({ min: 1, max: 12 }),
-    day: fc.integer({ min: 1, max: 28 }),
-  }),
+  fiscalYearEnd: fc.constant("2026-12-31"),
   archivedAt: fc.option(fc.constant("2026-11-22T00:00:00.000Z"), {
     nil: null,
   }),

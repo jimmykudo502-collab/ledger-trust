@@ -1,22 +1,6 @@
 import { z } from "zod";
 
-/** Longest month length for each month, January first. February allows 29. */
-const MAX_DAYS_IN_MONTH = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-
-const MONTH_NAMES = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
+import { formatLongDate, isoDateSchema } from "../dates";
 
 /** A client's identifier: a UUID, which also names its database file. */
 export const clientIdSchema = z.uuid();
@@ -29,17 +13,10 @@ export const clientNameSchema = z
   .max(200, "Client names can be at most 200 characters.");
 
 /**
- * A client's fiscal year-end as a month and day (FR-3). February 29 is
- * allowed and means the last day of February in non-leap years.
+ * The last day of the client's current fiscal year as `YYYY-MM-DD` (FR-3).
+ * Later fiscal years end on the same month and day.
  */
-export const fiscalYearEndSchema = z
-  .object({
-    month: z.number().int().min(1).max(12),
-    day: z.number().int().min(1).max(31),
-  })
-  .refine(({ month, day }) => day <= MAX_DAYS_IN_MONTH[month - 1], {
-    message: "That day doesn't exist in the chosen month.",
-  });
+export const fiscalYearEndSchema = isoDateSchema;
 
 /** Everything needed to create a client. */
 export const createClientInputSchema = z.object({
@@ -80,25 +57,11 @@ export type CreateClientInput = z.infer<typeof createClientInputSchema>;
 export type ClientSummary = z.infer<typeof clientSummarySchema>;
 
 /**
- * The number of days a month can have, used to build day pickers.
- * @param month Month number, 1 to 12.
- * @returns The maximum day for that month (29 for February).
- */
-export const maxDayInMonth = (month: number): number =>
-  MAX_DAYS_IN_MONTH[month - 1];
-
-/**
- * The English name of a month.
- * @param month Month number, 1 to 12.
- */
-export const monthName = (month: number): string => MONTH_NAMES[month - 1];
-
-/**
- * Formats a fiscal year-end for display, e.g. "December 31".
+ * Formats a fiscal year-end for display, e.g. "December 31, 2026".
  * @param fiscalYearEnd The year-end to format.
  */
-export const formatFiscalYearEnd = ({ month, day }: FiscalYearEnd): string =>
-  `${monthName(month)} ${day}`;
+export const formatFiscalYearEnd = (fiscalYearEnd: FiscalYearEnd): string =>
+  formatLongDate(fiscalYearEnd);
 
 /**
  * The client-list API the preload script exposes to the renderer as

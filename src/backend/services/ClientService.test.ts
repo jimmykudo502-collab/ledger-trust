@@ -3,22 +3,18 @@ import fs from "node:fs";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  maxDayInMonth,
-  type FiscalYearEnd,
-} from "../../common/clients/clientSchemas";
+import type { FiscalYearEnd } from "../../common/clients/clientSchemas";
 import { ClientFileStore } from "../db/ClientFileStore";
 import { TempClientWorkspace } from "../testing/TempClientWorkspace";
 import { ClientService, type ClientInitializer } from "./ClientService";
 
 const validFiscalYearEnd: fc.Arbitrary<FiscalYearEnd> = fc
-  .integer({ min: 1, max: 12 })
-  .chain((month) =>
-    fc.record({
-      month: fc.constant(month),
-      day: fc.integer({ min: 1, max: maxDayInMonth(month) }),
-    }),
-  );
+  .date({
+    min: new Date("2000-01-01T00:00:00Z"),
+    max: new Date("2099-12-31T00:00:00Z"),
+    noInvalidDate: true,
+  })
+  .map((date) => date.toISOString().slice(0, 10));
 
 const clientName = fc
   .string({ minLength: 1, maxLength: 40 })
@@ -63,7 +59,7 @@ describe("ClientService", () => {
 
   it("sorts the list by name, ignoring case", () => {
     for (const name of ["beta", "Alpha", "charlie"]) {
-      service.create({ name, fiscalYearEnd: { month: 12, day: 31 } });
+      service.create({ name, fiscalYearEnd: "2026-12-31" });
     }
     expect(service.list().map((c) => c.name)).toEqual([
       "Alpha",
@@ -75,7 +71,7 @@ describe("ClientService", () => {
   it("saves renames and year-end changes", () => {
     const client = service.create({
       name: "Made-up Rentals",
-      fiscalYearEnd: { month: 12, day: 31 },
+      fiscalYearEnd: "2026-12-31",
     });
 
     fc.assert(
@@ -91,16 +87,17 @@ describe("ClientService", () => {
     );
   });
 
-  it("rejects days that don't exist in the month", () => {
+  it("rejects dates that don't exist", () => {
+    const daysInMonth = (year: number, month: number) =>
+      new Date(Date.UTC(year, month, 0)).getUTCDate();
     fc.assert(
       fc.property(
-        fc.integer({ min: 1, max: 12 }).chain((month) =>
-          fc.record({
-            month: fc.constant(month),
-            day: fc.integer({ min: maxDayInMonth(month) + 1, max: 40 }),
-          }),
-        ),
-        (fiscalYearEnd) => {
+        fc.integer({ min: 2000, max: 2099 }),
+        fc.integer({ min: 1, max: 12 }),
+        fc.integer({ min: 1, max: 9 }),
+        (year, month, overshoot) => {
+          const day = daysInMonth(year, month) + overshoot;
+          const fiscalYearEnd = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
           expect(() =>
             service.create({ name: "Made-up Co", fiscalYearEnd }),
           ).toThrow();
@@ -112,14 +109,14 @@ describe("ClientService", () => {
 
   it("rejects blank names", () => {
     expect(() =>
-      service.create({ name: "   ", fiscalYearEnd: { month: 1, day: 31 } }),
+      service.create({ name: "   ", fiscalYearEnd: "2026-01-31" }),
     ).toThrow(/client name/);
   });
 
   it("treats archiving as idempotent and keeps data when unarchiving", () => {
     const client = service.create({
       name: "Made-up Rentals",
-      fiscalYearEnd: { month: 6, day: 30 },
+      fiscalYearEnd: "2026-06-30",
     });
 
     fc.assert(
@@ -151,7 +148,7 @@ describe("ClientService", () => {
 
     const client = service.create({
       name: "Made-up Co",
-      fiscalYearEnd: { month: 3, day: 31 },
+      fiscalYearEnd: "2026-03-31",
     });
 
     expect(initialized).toEqual([client.id]);
@@ -185,7 +182,7 @@ describe("ClientFileStore", () => {
   it("ignores files in the folder that aren't client databases", () => {
     const client = service.create({
       name: "Made-up Co",
-      fiscalYearEnd: { month: 12, day: 31 },
+      fiscalYearEnd: "2026-12-31",
     });
     fs.writeFileSync(path.join(workspace.directory, "notes.txt"), "hi");
     fs.writeFileSync(path.join(workspace.directory, "not-a-uuid.sqlite"), "");

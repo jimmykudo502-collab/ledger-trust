@@ -234,7 +234,7 @@ describe("client database schema", () => {
     const insert = () =>
       db
         .prepare(
-          "INSERT INTO client_profile (id, name, fiscal_year_end_month, fiscal_year_end_day) VALUES (1, 'Made-up Rentals', 12, 31)",
+          "INSERT INTO client_profile (id, name, fiscal_year_end) VALUES (1, 'Made-up Rentals', '2026-12-31')",
         )
         .run();
 

@@ -34,7 +34,7 @@ A local desktop app (Electron.js) for a bookkeeper who keeps the books of other 
 
 - **FR-1** Client list: create, open, rename, and archive clients.
 - **FR-2** Each client's data is fully separate: its own chart of accounts, bank accounts, journal, and periods.
-- **FR-3** Each client has its own fiscal year-end, set when the client is created and changeable later. Year-ends can differ between clients.
+- **FR-3** Each client has its own fiscal year-end, set when the client is created and changeable later. Year-ends can differ between clients. It is entered as a full date (the last day of the current fiscal year, e.g. December 31, 2026); later years end on the same month and day.
 
 ### 4.2 Chart of accounts
 
@@ -136,7 +136,7 @@ Core entities: Client, Account, BankAccount (linked to an Account), ImportBatch,
 - Transfer matching window: about 3 to 4 days.
 - New clients: blank chart of accounts, with a master template that can be imported.
 - Master template: one master chart of accounts kept in the app. The user saves any client's chart (minus system accounts) as the master and imports it into other clients; codes the client already uses are skipped. Importing a template from Excel may follow with the import phase.
-- Fiscal year-end is stored as a month and day; February 29 means the last day of February in non-leap years.
+- Fiscal year-end is stored as the full date of the current fiscal year's end (`YYYY-MM-DD`). When rolling forward, a February 29 year-end becomes the last day of February in non-leap years.
 - Accounts with posted entries keep their type, so past statements don't change.
 
 ### Still open

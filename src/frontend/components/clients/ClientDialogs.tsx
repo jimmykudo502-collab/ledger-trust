@@ -7,7 +7,7 @@ import type {
 import { useClientStore } from "../../stores/useClientStore";
 import { ModalForm } from "../common/Modal";
 import { useSubmit } from "../common/useSubmit";
-import { FiscalYearEndPicker } from "./FiscalYearEndPicker";
+import { defaultFiscalYearEnd, FiscalYearEndPicker } from "./FiscalYearEndPicker";
 
 interface DialogProps {
   onClose: () => void;
@@ -19,10 +19,9 @@ interface DialogProps {
 export function NewClientDialog({ onClose }: DialogProps) {
   const create = useClientStore((state) => state.create);
   const [name, setName] = useState("");
-  const [fiscalYearEnd, setFiscalYearEnd] = useState<FiscalYearEnd>({
-    month: 12,
-    day: 31,
-  });
+  const [fiscalYearEnd, setFiscalYearEnd] = useState<FiscalYearEnd>(
+    defaultFiscalYearEnd,
+  );
   const { busy, error, submit } = useSubmit(
     () => create({ name, fiscalYearEnd }),
     onClose,

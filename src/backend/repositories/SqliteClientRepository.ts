@@ -13,14 +13,13 @@ import type { ClientRepository } from "./ClientRepository";
 
 interface ProfileRow {
   name: string;
-  fiscal_year_end_month: number;
-  fiscal_year_end_day: number;
+  fiscal_year_end: string;
   archived_at: string | null;
   created_at: string;
 }
 
 const SELECT_PROFILE = `
-  SELECT name, fiscal_year_end_month, fiscal_year_end_day, archived_at, created_at
+  SELECT name, fiscal_year_end, archived_at, created_at
   FROM client_profile WHERE id = 1`;
 
 /**
@@ -63,10 +62,9 @@ export class SqliteClientRepository implements ClientRepository {
     this.pool
       .create(id)
       .prepare(
-        `INSERT INTO client_profile (id, name, fiscal_year_end_month, fiscal_year_end_day)
-         VALUES (1, ?, ?, ?)`,
+        "INSERT INTO client_profile (id, name, fiscal_year_end) VALUES (1, ?, ?)",
       )
-      .run(input.name, input.fiscalYearEnd.month, input.fiscalYearEnd.day);
+      .run(input.name, input.fiscalYearEnd);
     return this.require(id);
   }
 
@@ -85,9 +83,9 @@ export class SqliteClientRepository implements ClientRepository {
   ): ClientSummary {
     this.dbFor(clientId)
       .prepare(
-        "UPDATE client_profile SET fiscal_year_end_month = ?, fiscal_year_end_day = ? WHERE id = 1",
+        "UPDATE client_profile SET fiscal_year_end = ? WHERE id = 1",
       )
-      .run(fiscalYearEnd.month, fiscalYearEnd.day);
+      .run(fiscalYearEnd);
     return this.require(clientId);
   }
 
@@ -120,10 +118,7 @@ export class SqliteClientRepository implements ClientRepository {
 const toSummary = (id: ClientId, row: ProfileRow): ClientSummary => ({
   id,
   name: row.name,
-  fiscalYearEnd: {
-    month: row.fiscal_year_end_month,
-    day: row.fiscal_year_end_day,
-  },
+  fiscalYearEnd: row.fiscal_year_end,
   archivedAt: row.archived_at,
   createdAt: row.created_at,
 });

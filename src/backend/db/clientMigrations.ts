@@ -125,5 +125,51 @@ const initialSchema: Migration = {
   `,
 };
 
+/**
+ * SQL for the year-end date in a given year for a stored month and day,
+ * clamping February 29 to the last day of February in non-leap years.
+ */
+const yearEndIn = (yearExpression: string): string => `min(
+  date(printf('%04d-%02d-01', ${yearExpression}, fiscal_year_end_month),
+       printf('+%d days', fiscal_year_end_day - 1)),
+  date(printf('%04d-%02d-01', ${yearExpression}, fiscal_year_end_month),
+       '+1 month', '-1 day'))`;
+
+/**
+ * Stores the fiscal year-end as a full date (the end of the client's current
+ * fiscal year, e.g. 2026-12-31) instead of a month and day. Existing clients
+ * get the next year-end on or after today.
+ */
+const fiscalYearEndDate: Migration = {
+  version: 2,
+  name: "store fiscal year-end as a full date",
+  sql: `
+    CREATE TABLE client_profile_new (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      name TEXT NOT NULL ${notBlank("name")},
+      fiscal_year_end TEXT NOT NULL ${isoDate("fiscal_year_end")},
+      archived_at TEXT,
+      created_at TEXT NOT NULL DEFAULT ${NOW}
+    ) STRICT;
+
+    WITH this_year AS (
+      SELECT *, ${yearEndIn("CAST(strftime('%Y', 'now') AS INTEGER)")} AS this_year_end,
+                ${yearEndIn("CAST(strftime('%Y', 'now') AS INTEGER) + 1")} AS next_year_end
+      FROM client_profile
+    )
+    INSERT INTO client_profile_new (id, name, fiscal_year_end, archived_at, created_at)
+    SELECT id, name,
+           CASE WHEN this_year_end >= date('now') THEN this_year_end ELSE next_year_end END,
+           archived_at, created_at
+    FROM this_year;
+
+    DROP TABLE client_profile;
+    ALTER TABLE client_profile_new RENAME TO client_profile;
+  `,
+};
+
 /** Every client database migration, oldest first. */
-export const CLIENT_MIGRATIONS: readonly Migration[] = [initialSchema];
+export const CLIENT_MIGRATIONS: readonly Migration[] = [
+  initialSchema,
+  fiscalYearEndDate,
+];
