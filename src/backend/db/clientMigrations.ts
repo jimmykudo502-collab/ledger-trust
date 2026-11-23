@@ -44,7 +44,7 @@ const initialSchema: Migration = {
       code TEXT NOT NULL UNIQUE ${notBlank("code")},
       name TEXT NOT NULL ${notBlank("name")},
       type TEXT NOT NULL CHECK (type IN ('asset', 'liability', 'equity', 'revenue', 'expense')),
-      is_system INTEGER NOT NULL DEFAULT 0 CHECK (is_system IN (0, 1)),
+      system_key TEXT UNIQUE CHECK (system_key IN ('bank_transfer_control')),
       created_at TEXT NOT NULL DEFAULT ${NOW}
     ) STRICT;
 
