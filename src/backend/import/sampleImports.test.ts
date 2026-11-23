@@ -41,6 +41,23 @@ describe("sample imports", () => {
     ]);
   });
 
+  it("reads the Q1 rental write-up: Date, Description, Amount", () => {
+    const [sheet] = reader.readFile(fs.readFileSync(path.join(SAMPLES, "made-up-rental-chequing-q1-2026.xlsx")));
+    const { mapping } = detectMapping(sheet.rows, "bank");
+    const rows = parseRows(sheet.rows, mapping);
+
+    expect(mapping).toMatchObject({
+      headerRow: 0,
+      dateColumn: 0,
+      descriptionColumn: 1,
+      amount: { kind: "signed", column: 2, positiveIsMoneyIn: true },
+    });
+    expect(rows).toHaveLength(44);
+    expect(rows.every((row) => row.problem === null)).toBe(true);
+    expect(rows[0]).toMatchObject({ date: "2026-01-01", amountCents: 145000 });
+    expect(net(rows.map((row) => row.amountCents))).toBe(-83122);
+  });
+
   it("reads the pasted savings rows with day-first dates", () => {
     const [sheet] = reader.readText(fs.readFileSync(path.join(SAMPLES, "made-up-savings-paste.txt"), "utf8"));
     const { mapping, dateOrderAmbiguous } = detectMapping(sheet.rows, "bank");
