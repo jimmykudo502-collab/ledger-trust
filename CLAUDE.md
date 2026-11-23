@@ -14,7 +14,8 @@ The full requirements are in [docs/phase-1-prd.md](docs/phase-1-prd.md). Read it
 - Storage: SQLite via `better-sqlite3`, **one database file per client**.
 - Spreadsheets: SheetJS to read .xlsx/.ods imports and write Excel reports. PDFs use Electron's built-in print-to-PDF.
 - Validation: `zod`.
-- `better-sqlite3` and SheetJS are not installed yet; they arrive with the build phases that need them.
+- `better-sqlite3` (13.x) ships Node-API prebuilds that load in both Node (Vitest) and Electron, so there is no native rebuild step: Forge's `rebuildConfig.ignoreModules` skips it and `vite.main.config.ts` marks it external. Client databases use SQLite's default rollback journal, not WAL, so a closed client is one file that can be copied as a backup. Known gap: the Forge Vite plugin only packages `.vite/`, so `pnpm package`/`make` builds do not yet include `better-sqlite3`; fix this before distributing (phase 9).
+- SheetJS is not installed yet; it arrives with the import phase.
 - `@openrouter/agent` is installed from earlier scaffolding but is **not** part of Phase 1. Don't build features on it, since client data must never leave the machine.
 
 ### Domain rules (non-negotiable)
@@ -29,7 +30,7 @@ The full requirements are in [docs/phase-1-prd.md](docs/phase-1-prd.md). Read it
 
 ### Phase 1 build order
 
-1. Project setup and database
+1. Project setup and database (done)
 2. Clients and chart of accounts
 3. Bank account tabs and import
 4. Coding grid and posting
@@ -48,7 +49,7 @@ Real client financial files must never be committed, logged or pasted into promp
 
 ## Commands
 
-Package manager is **pnpm** (see `pnpm-lock.yaml`, `pnpm-workspace.yaml`).
+Package manager is **pnpm** (see `pnpm-lock.yaml`, `pnpm-workspace.yaml`). `nodeLinker: hoisted` in `pnpm-workspace.yaml` is required by Electron Forge; packages with install scripts must be listed under `allowBuilds`.
 
 - `pnpm install` — install dependencies
 - `pnpm start` — run the app in dev mode (Vite dev server + Electron, DevTools open)
@@ -69,6 +70,8 @@ src/
   common/ipc/        Code shared by main and renderer (IPC channel names)
   backend/           Main-process only
     services/        Business logic as classes (e.g. HelloWorldService)
+    db/              SQLite access: ClientDatabaseFactory opens a client file and
+                     runs MigrationRunner over clientMigrations.ts
     ipc/             ipcMain.handle registrations that delegate to services
   frontend/          Renderer side
     ipc/             Preload clients wrapping ipcRenderer.invoke, exposed on window
@@ -77,6 +80,12 @@ global.d.ts          Types for the window.* APIs exposed by preload
 ```
 
 Vite configs: `vite.main.config.ts`, `vite.preload.config.ts`, `vite.renderer.config.ts`; Forge config in `forge.config.ts`.
+
+### Database
+
+- One SQLite file per client, opened with `ClientDatabaseFactory.open(path)` (foreign keys on, schema migrated). Tests use `IN_MEMORY_DATABASE`.
+- Schema changes are new entries appended to `CLIENT_MIGRATIONS` in `src/backend/db/clientMigrations.ts` (version = previous + 1, tracked in `PRAGMA user_version`). Never edit a migration that has shipped.
+- Tables are `STRICT`; money columns are `INTEGER` cents; dates are `YYYY-MM-DD` text checked with `date(x) IS x`. Journal lines hold a debit or a credit, never both. Entry balancing is enforced by the posting services, since SQLite can't check a multi-row invariant at commit.
 
 ### Adding a new IPC feature
 
