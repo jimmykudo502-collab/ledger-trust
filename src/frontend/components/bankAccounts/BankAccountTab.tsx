@@ -1,52 +1,70 @@
 import { useCallback, useEffect, useState } from "react";
 
+import type { Account } from "../../../common/accounts/accountSchemas";
 import {
   BANK_ACCOUNT_KIND_LABELS,
   type BankAccount,
 } from "../../../common/bankAccounts/bankAccountSchemas";
 import type { ImportSource } from "../../../common/imports/importSchemas";
-import type { ImportBatch } from "../../../common/staging/stagingSchemas";
+import { formatCents } from "../../../common/money";
+import type { ImportBatch, StagedTransaction } from "../../../common/staging/stagingSchemas";
+import { CodingGrid } from "../coding/CodingGrid";
 import { ModalForm } from "../common/Modal";
 import { useSubmit } from "../common/useSubmit";
+import { ImportsList } from "../imports/ImportsList";
 import { ImportWizard } from "../imports/ImportWizard";
-import { StagedTransactions } from "../imports/StagedTransactions";
 
 interface BankAccountTabProps {
   clientId: string;
   bankAccount: BankAccount;
-  /** Called after the tab changes (renamed, or something imported). */
-  onChanged: (bankAccount: BankAccount) => void;
+  /** Every tab of the client, for rule scopes. */
+  bankAccounts: readonly BankAccount[];
+  /** Called after anything that changes the tab (rename, import, posting). */
+  onChanged: () => Promise<void>;
   /** Called after the tab is removed. */
   onRemoved: () => void;
 }
 
+const messageOf = (error: unknown) => (error instanceof Error ? error.message : String(error));
+
 /**
- * One bank account or credit card tab: what it posts to, plus rename and
- * remove. Imports and staged transactions live here too.
+ * One bank account or credit card tab: import, code and post its rows, and
+ * see the linked account's balance from posted entries.
  */
-export function BankAccountTab({
-  clientId,
-  bankAccount,
-  onChanged,
-  onRemoved,
-}: BankAccountTabProps) {
+export function BankAccountTab({ clientId, bankAccount, bankAccounts, onChanged, onRemoved }: BankAccountTabProps) {
   const [renaming, setRenaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [batches, setBatches] = useState<ImportBatch[]>([]);
+  const [rows, setRows] = useState<StagedTransaction[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [wizard, setWizard] = useState<{ source: ImportSource | null } | null>(null);
 
-  const reloadBatches = useCallback(async () => {
+  const reload = useCallback(async () => {
     try {
-      setBatches(await window.staging.list(clientId, bankAccount.id));
+      const [nextBatches, nextRows, nextAccounts] = await Promise.all([
+        window.staging.list(clientId, bankAccount.id),
+        window.staging.rows(clientId, bankAccount.id),
+        window.chartOfAccounts.list(clientId),
+      ]);
+      setBatches(nextBatches);
+      setRows(nextRows);
+      setAccounts(nextAccounts);
+      setLoaded(true);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
+      setError(messageOf(caught));
     }
   }, [clientId, bankAccount.id]);
 
   useEffect(() => {
-    void reloadBatches();
-  }, [reloadBatches]);
+    void reload();
+  }, [reload]);
+
+  const refreshAll = async () => {
+    await reload();
+    await onChanged();
+  };
 
   const openFile = async () => {
     setError(null);
@@ -55,7 +73,7 @@ export function BankAccountTab({
       const source = await window.imports.openFile();
       if (source) setWizard({ source });
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
+      setError(messageOf(caught));
     }
   };
 
@@ -65,28 +83,26 @@ export function BankAccountTab({
     }
     try {
       await window.staging.removeBatch(clientId, batch.id);
-      await reloadBatches();
-      onChanged(bankAccount);
+      await refreshAll();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
+      setError(messageOf(caught));
     }
   };
 
-  const remove = async () => {
-    if (
-      !window.confirm(
-        `Remove the "${bankAccount.name}" tab? Its ledger account ${bankAccount.accountCode} stays in the chart of accounts.`,
-      )
-    ) {
+  const removeTab = async () => {
+    if (!window.confirm(`Remove the "${bankAccount.name}" tab? Its ledger account ${bankAccount.accountCode} stays in the chart of accounts.`)) {
       return;
     }
     try {
       await window.bankAccounts.delete(clientId, bankAccount.id);
       onRemoved();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
+      setError(messageOf(caught));
     }
   };
+
+  const isCard = bankAccount.kind === "credit_card";
+  const balance = isCard ? -bankAccount.ledgerBalanceCents : bankAccount.ledgerBalanceCents;
 
   return (
     <section className="panel">
@@ -97,7 +113,10 @@ export function BankAccountTab({
             <span className="badge">{BANK_ACCOUNT_KIND_LABELS[bankAccount.kind]}</span>
           </h3>
           <p className="muted">
-            Posts to {bankAccount.accountCode} {bankAccount.accountName}
+            Posts to {bankAccount.accountCode} {bankAccount.accountName} ·{" "}
+            <span title="Computed from posted entries">
+              {isCard ? "Balance owing" : "Ledger balance"} <strong className="balance">{formatCents(balance)}</strong>
+            </span>
           </p>
         </div>
         <div className="panel-actions">
@@ -118,7 +137,7 @@ export function BankAccountTab({
             Rename
           </button>
           {!bankAccount.hasImports && (
-            <button type="button" className="button danger" onClick={() => void remove()}>
+            <button type="button" className="button danger" onClick={() => void removeTab()}>
               Remove tab
             </button>
           )}
@@ -135,7 +154,26 @@ export function BankAccountTab({
         </p>
       )}
 
-      <StagedTransactions batches={batches} onRemove={(batch) => void removeBatch(batch)} />
+      {loaded && rows.length === 0 ? (
+        <div className="empty-panel">
+          <p>Nothing imported yet.</p>
+          <p className="muted">Import a statement file or paste rows to get started.</p>
+        </div>
+      ) : (
+        loaded && (
+          <CodingGrid
+            clientId={clientId}
+            bankAccount={bankAccount}
+            bankAccounts={bankAccounts}
+            rows={rows}
+            accounts={accounts}
+            onChanged={refreshAll}
+            onNotice={setNotice}
+          />
+        )
+      )}
+
+      <ImportsList batches={batches} onRemove={(batch) => void removeBatch(batch)} />
 
       {wizard && (
         <ImportWizard
@@ -143,9 +181,8 @@ export function BankAccountTab({
           bankAccount={bankAccount}
           initialSource={wizard.source}
           onImported={(count) => {
-            setNotice(`Imported ${count} row${count === 1 ? "" : "s"} into staging. They reach the ledger only when posted.`);
-            void reloadBatches();
-            onChanged(bankAccount);
+            setNotice(`Imported ${count} row${count === 1 ? "" : "s"}. Code them below, then post.`);
+            void refreshAll();
           }}
           onClose={() => setWizard(null)}
         />
@@ -155,7 +192,7 @@ export function BankAccountTab({
         <RenameBankAccountDialog
           clientId={clientId}
           bankAccount={bankAccount}
-          onRenamed={onChanged}
+          onRenamed={() => void onChanged()}
           onClose={() => setRenaming(false)}
         />
       )}
@@ -166,31 +203,19 @@ export function BankAccountTab({
 interface RenameBankAccountDialogProps {
   clientId: string;
   bankAccount: BankAccount;
-  onRenamed: (bankAccount: BankAccount) => void;
+  onRenamed: () => void;
   onClose: () => void;
 }
 
-function RenameBankAccountDialog({
-  clientId,
-  bankAccount,
-  onRenamed,
-  onClose,
-}: RenameBankAccountDialogProps) {
+function RenameBankAccountDialog({ clientId, bankAccount, onRenamed, onClose }: RenameBankAccountDialogProps) {
   const [name, setName] = useState(bankAccount.name);
-  const { busy, error, submit } = useSubmit(
-    async () => onRenamed(await window.bankAccounts.rename(clientId, bankAccount.id, name)),
-    onClose,
-  );
+  const { busy, error, submit } = useSubmit(async () => {
+    await window.bankAccounts.rename(clientId, bankAccount.id, name);
+    onRenamed();
+  }, onClose);
 
   return (
-    <ModalForm
-      title="Rename tab"
-      submitLabel="Save"
-      busy={busy}
-      error={error}
-      onSubmit={submit}
-      onClose={onClose}
-    >
+    <ModalForm title="Rename tab" submitLabel="Save" busy={busy} error={error} onSubmit={submit} onClose={onClose}>
       <label className="field">
         <span>Name</span>
         <input autoFocus value={name} onChange={(event) => setName(event.target.value)} />

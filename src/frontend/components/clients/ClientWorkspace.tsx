@@ -5,14 +5,15 @@ import type { ClientSummary } from "../../../common/clients/clientSchemas";
 import { ChartOfAccounts } from "../accounts/ChartOfAccounts";
 import { AddBankAccountDialog } from "../bankAccounts/AddBankAccountDialog";
 import { BankAccountTab } from "../bankAccounts/BankAccountTab";
+import { CodingRules } from "../coding/CodingRules";
 import { ClientHeader } from "./ClientHeader";
 
 interface ClientWorkspaceProps {
   client: ClientSummary;
 }
 
-/** Which tab is showing: the chart of accounts or a bank account's id. */
-type TabKey = "accounts" | number;
+/** Which tab is showing: chart of accounts, coding rules, or a bank account's id. */
+type TabKey = "accounts" | "rules" | number;
 
 /**
  * The open client: header, then a tab for the chart of accounts and one tab
@@ -51,6 +52,15 @@ export function ClientWorkspace({ client }: ClientWorkspaceProps) {
         >
           Chart of accounts
         </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "rules"}
+          className={`tab${tab === "rules" ? " active" : ""}`}
+          onClick={() => setTab("rules")}
+        >
+          Coding rules
+        </button>
         {bankAccounts.map((bankAccount) => (
           <button
             key={bankAccount.id}
@@ -78,12 +88,15 @@ export function ClientWorkspace({ client }: ClientWorkspaceProps) {
           key={current.id}
           clientId={client.id}
           bankAccount={current}
-          onChanged={() => void reload()}
+          bankAccounts={bankAccounts}
+          onChanged={reload}
           onRemoved={() => {
             setTab("accounts");
             void reload();
           }}
         />
+      ) : tab === "rules" ? (
+        <CodingRules clientId={client.id} bankAccounts={bankAccounts} />
       ) : (
         <ChartOfAccounts clientId={client.id} />
       )}

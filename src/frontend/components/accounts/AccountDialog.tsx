@@ -13,6 +13,10 @@ import { useSubmit } from "../common/useSubmit";
 interface AccountDialogProps {
   /** The account being edited, or `undefined` to add a new one. */
   account?: Account;
+  /** Starting values for a new account, e.g. a code typed in the grid. */
+  initial?: Partial<AccountInput>;
+  /** Extra explanation shown above the fields. */
+  hint?: string;
   /** Saves the form; rejects with a user-facing message. */
   onSave: (input: AccountInput) => Promise<unknown>;
   onClose: () => void;
@@ -22,10 +26,10 @@ interface AccountDialogProps {
  * Dialog for adding or editing an account's code, name and type (FR-5).
  * The type is read-only for system accounts and accounts with posted entries.
  */
-export function AccountDialog({ account, onSave, onClose }: AccountDialogProps) {
-  const [code, setCode] = useState(account?.code ?? "");
-  const [name, setName] = useState(account?.name ?? "");
-  const [type, setType] = useState<AccountType>(account?.type ?? "expense");
+export function AccountDialog({ account, initial, hint, onSave, onClose }: AccountDialogProps) {
+  const [code, setCode] = useState(account?.code ?? initial?.code ?? "");
+  const [name, setName] = useState(account?.name ?? initial?.name ?? "");
+  const [type, setType] = useState<AccountType>(account?.type ?? initial?.type ?? "expense");
   const { busy, error, submit } = useSubmit(
     () => onSave({ code, name, type }),
     onClose,
@@ -46,11 +50,12 @@ export function AccountDialog({ account, onSave, onClose }: AccountDialogProps) 
       onSubmit={submit}
       onClose={onClose}
     >
+      {hint && <p className="hint">{hint}</p>}
       <div className="field-row">
         <label className="field code-field">
           <span>Code</span>
           <input
-            autoFocus
+            autoFocus={!initial?.code}
             value={code}
             onChange={(event) => setCode(event.target.value)}
             placeholder="e.g. 5100"
@@ -59,6 +64,7 @@ export function AccountDialog({ account, onSave, onClose }: AccountDialogProps) 
         <label className="field">
           <span>Name</span>
           <input
+            autoFocus={Boolean(initial?.code)}
             value={name}
             onChange={(event) => setName(event.target.value)}
             placeholder="e.g. Repairs and maintenance"
