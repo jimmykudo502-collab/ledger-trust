@@ -11,5 +11,6 @@ interface Window {
   journalEntries: import("./src/common/journal/journalSchemas").JournalEntriesApi;
   reports: import("./src/common/reports/reportSchemas").ReportsApi;
   yearEnd: import("./src/common/years/yearSchemas").YearEndApi;
+  exports: import("./src/common/reports/exportSchemas").ExportsApi;
   accountTemplates: import("./src/common/templates/accountTemplateSchemas").AccountTemplatesApi;
 }

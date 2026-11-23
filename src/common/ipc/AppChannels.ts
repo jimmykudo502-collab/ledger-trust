@@ -46,6 +46,8 @@ export const APP_CHANNELS = {
   YEARS_UNLOCK: "app:yearsUnlock",
   YEARS_CLOSE: "app:yearsClose",
   YEARS_REVERSE: "app:yearsReverse",
+  EXPORTS_REPORT: "app:exportsReport",
+  EXPORTS_SHOW: "app:exportsShow",
   TEMPLATES_INFO: "app:templatesInfo",
   TEMPLATES_SAVE_FROM_CLIENT: "app:templatesSaveFromClient",
   TEMPLATES_IMPORT_INTO_CLIENT: "app:templatesImportIntoClient",

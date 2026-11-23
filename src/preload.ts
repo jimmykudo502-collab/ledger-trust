@@ -2,6 +2,7 @@ import { exposeAccountTemplatesClient } from "./frontend/ipc/AccountTemplatesCli
 import { exposeBankAccountsClient } from "./frontend/ipc/BankAccountsClient";
 import { exposeChartOfAccountsClient } from "./frontend/ipc/ChartOfAccountsClient";
 import { exposeClientsClient } from "./frontend/ipc/ClientsClient";
+import { exposeExportsClient } from "./frontend/ipc/ExportsClient";
 import { exposeCodingRulesClient } from "./frontend/ipc/CodingRulesClient";
 import { exposeImportsClient } from "./frontend/ipc/ImportsClient";
 import { exposeJournalEntriesClient } from "./frontend/ipc/JournalEntriesClient";
@@ -21,3 +22,4 @@ exposeTransfersClient();
 exposeJournalEntriesClient();
 exposeReportsClient();
 exposeYearEndClient();
+exposeExportsClient();

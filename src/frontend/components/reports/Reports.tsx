@@ -55,6 +55,27 @@ export function Reports({ client }: ReportsProps) {
   const [years, setYears] = useState<FiscalYearView[]>([]);
   const [reversing, setReversing] = useState<{ id: number; date: string; description: string } | null>(null);
   const [refresh, setRefresh] = useState(0);
+  const [exported, setExported] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+
+  const exportAs = async (format: "pdf" | "xlsx") => {
+    setExporting(true);
+    setError(null);
+    setExported(null);
+    try {
+      const result = await window.exports.exportReport(
+        client.id,
+        kind,
+        { from: range.from, to: range.to, includeClosingEntries: includeClosing, accountId },
+        format,
+      );
+      if (result) setExported(result.path);
+    } catch (caught) {
+      setError(messageOf(caught));
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     window.chartOfAccounts.list(client.id).then(setAccounts, () => setAccounts([]));
@@ -156,13 +177,31 @@ export function Reports({ client }: ReportsProps) {
           <h3>{REPORT_TITLES[kind]}</h3>
           <p className="muted">{periodLabel(kind, range)}</p>
         </div>
-        {(kind === "trialBalance" || kind === "generalLedger" || kind === "balanceSheet") && (
-          <label className="radio-line" title="Year-end closing entries move revenue and expenses into retained earnings">
-            <input type="checkbox" checked={includeClosing} onChange={(event) => setIncludeClosing(event.target.checked)} />
-            Include year-end closing entries
-          </label>
-        )}
+        <div className="report-actions">
+          {(kind === "trialBalance" || kind === "generalLedger" || kind === "balanceSheet") && (
+            <label className="radio-line" title="Year-end closing entries move revenue and expenses into retained earnings">
+              <input type="checkbox" checked={includeClosing} onChange={(event) => setIncludeClosing(event.target.checked)} />
+              Include year-end closing entries
+            </label>
+          )}
+          <div className="panel-actions">
+            <button type="button" className="button" disabled={exporting} onClick={() => void exportAs("pdf")}>
+              Export PDF
+            </button>
+            <button type="button" className="button" disabled={exporting} onClick={() => void exportAs("xlsx")}>
+              Export Excel
+            </button>
+          </div>
+        </div>
       </div>
+      {exported && (
+        <p className="notice" role="status">
+          Saved {exported}{" "}
+          <button type="button" className="button small" onClick={() => void window.exports.showInFolder(exported)}>
+            Show in folder
+          </button>
+        </p>
+      )}
 
       {error && (
         <p className="form-error" role="alert">

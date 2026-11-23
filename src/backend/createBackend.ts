@@ -19,6 +19,7 @@ import { BankAccountService } from "./services/BankAccountService";
 import { BankPostingService } from "./services/BankPostingService";
 import { ChartOfAccountsService } from "./services/ChartOfAccountsService";
 import { ClientService } from "./services/ClientService";
+import { ExportService, type PdfPrinter } from "./services/ExportService";
 import { CodingRuleService } from "./services/CodingRuleService";
 import { CodingService } from "./services/CodingService";
 import { ImportService } from "./services/ImportService";
@@ -45,6 +46,7 @@ export interface Backend {
   readonly manualEntries: ManualEntryService;
   readonly reports: ReportService;
   readonly fiscalYears: FiscalYearService;
+  readonly exports: ExportService;
   /** Closes every open client database. */
   dispose(): void;
 }
@@ -54,8 +56,9 @@ export interface Backend {
  * @param dataDirectory Folder for app data (Electron's `userData`); client
  *   databases go in its `clients` subfolder and the master chart of accounts
  *   template in `templates/master-chart-of-accounts.json`.
+ * @param pdfPrinter Turns report HTML into PDF (Electron's print-to-PDF).
  */
-export const createBackend = (dataDirectory: string): Backend => {
+export const createBackend = (dataDirectory: string, pdfPrinter: PdfPrinter): Backend => {
   const fileStore = new ClientFileStore(path.join(dataDirectory, "clients"));
   const pool = new ClientConnectionPool(fileStore, new ClientDatabaseFactory());
   const chartOfAccounts = new ChartOfAccountsService(
@@ -88,6 +91,7 @@ export const createBackend = (dataDirectory: string): Backend => {
   const journal = new JournalService((clientId) => new SqliteJournalRepository(pool.get(clientId)), chartOfAccounts);
   const coding = new CodingService(stagingFor, bankAccounts, chartOfAccounts);
   const reportsFor = (clientId: string) => new SqliteReportRepository(pool.get(clientId));
+  const reports = new ReportService(reportsFor);
   const fiscalYears = new FiscalYearService(
     (clientId) => new SqliteFiscalYearRepository(pool.get(clientId)),
     reportsFor,
@@ -121,8 +125,9 @@ export const createBackend = (dataDirectory: string): Backend => {
     codingRules,
     transfers,
     manualEntries: new ManualEntryService(journal),
-    reports: new ReportService(reportsFor),
+    reports,
     fiscalYears,
+    exports: new ExportService(reports, clientRepository, pdfPrinter),
     dispose: () => pool.closeAll(),
   };
 };

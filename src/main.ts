@@ -6,7 +6,9 @@ import { createBackend } from "./backend/createBackend";
 import { registerAccountTemplateHandlers } from "./backend/ipc/AccountTemplateHandlers";
 import { registerBankAccountHandlers } from "./backend/ipc/BankAccountHandlers";
 import { registerChartOfAccountsHandlers } from "./backend/ipc/ChartOfAccountsHandlers";
+import { ElectronPdfPrinter } from "./backend/exports/ElectronPdfPrinter";
 import { registerClientHandlers } from "./backend/ipc/ClientHandlers";
+import { registerExportHandlers } from "./backend/ipc/ExportHandlers";
 import { registerCodingRuleHandlers } from "./backend/ipc/CodingRuleHandlers";
 import { registerImportHandlers } from "./backend/ipc/ImportHandlers";
 import { registerJournalEntryHandlers } from "./backend/ipc/JournalEntryHandlers";
@@ -52,6 +54,7 @@ const createWindow = () => {
 // the real client data.
 const backend = createBackend(
   process.env.LEDGER_TRUST_DATA_DIR ?? app.getPath("userData"),
+  new ElectronPdfPrinter(),
 );
 
 registerClientHandlers(ipcMain, backend.clients);
@@ -65,6 +68,7 @@ registerTransferHandlers(ipcMain, backend.transfers);
 registerJournalEntryHandlers(ipcMain, backend.manualEntries);
 registerReportHandlers(ipcMain, backend.reports);
 registerYearEndHandlers(ipcMain, backend.fiscalYears);
+registerExportHandlers(ipcMain, backend.exports);
 
 app.on("will-quit", () => {
   backend.dispose();

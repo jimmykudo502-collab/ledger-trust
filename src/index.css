@@ -927,3 +927,10 @@ tr.clickable:hover .link-like {
     color: #a6f4c5;
   }
 }
+
+.report-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
