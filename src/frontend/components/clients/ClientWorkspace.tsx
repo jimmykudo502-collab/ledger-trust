@@ -6,6 +6,7 @@ import { ChartOfAccounts } from "../accounts/ChartOfAccounts";
 import { AddBankAccountDialog } from "../bankAccounts/AddBankAccountDialog";
 import { BankAccountTab } from "../bankAccounts/BankAccountTab";
 import { CodingRules } from "../coding/CodingRules";
+import { TransferReview } from "../transfers/TransferReview";
 import { ClientHeader } from "./ClientHeader";
 
 interface ClientWorkspaceProps {
@@ -13,7 +14,7 @@ interface ClientWorkspaceProps {
 }
 
 /** Which tab is showing: chart of accounts, coding rules, or a bank account's id. */
-type TabKey = "accounts" | "rules" | number;
+type TabKey = "accounts" | "rules" | "transfers" | number;
 
 /**
  * The open client: header, then a tab for the chart of accounts and one tab
@@ -61,6 +62,15 @@ export function ClientWorkspace({ client }: ClientWorkspaceProps) {
         >
           Coding rules
         </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "transfers"}
+          className={`tab${tab === "transfers" ? " active" : ""}`}
+          onClick={() => setTab("transfers")}
+        >
+          Transfers
+        </button>
         {bankAccounts.map((bankAccount) => (
           <button
             key={bankAccount.id}
@@ -95,6 +105,8 @@ export function ClientWorkspace({ client }: ClientWorkspaceProps) {
             void reload();
           }}
         />
+      ) : tab === "transfers" ? (
+        <TransferReview clientId={client.id} />
       ) : tab === "rules" ? (
         <CodingRules clientId={client.id} bankAccounts={bankAccounts} />
       ) : (

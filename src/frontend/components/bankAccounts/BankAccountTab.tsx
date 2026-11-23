@@ -180,8 +180,12 @@ export function BankAccountTab({ clientId, bankAccount, bankAccounts, onChanged,
           clientId={clientId}
           bankAccount={bankAccount}
           initialSource={wizard.source}
-          onImported={(count) => {
-            setNotice(`Imported ${count} row${count === 1 ? "" : "s"}. Code them below, then post.`);
+          onImported={({ stagedCount, matchedTransfers }) => {
+            const transfers =
+              matchedTransfers > 0
+                ? ` Matched ${matchedTransfers} transfer${matchedTransfers === 1 ? "" : "s"} with your other tabs (see Transfers).`
+                : "";
+            setNotice(`Imported ${stagedCount} row${stagedCount === 1 ? "" : "s"}.${transfers} Code the rest below, then post.`);
             void refreshAll();
           }}
           onClose={() => setWizard(null)}

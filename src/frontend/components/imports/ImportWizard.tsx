@@ -11,6 +11,7 @@ import {
   type PreviewRow,
   type SheetAnalysis,
   type SheetRef,
+  type StageResult,
 } from "../../../common/imports/importSchemas";
 import { formatCents } from "../../../common/money";
 import { ModalForm } from "../common/Modal";
@@ -22,7 +23,7 @@ interface ImportWizardProps {
   /** The opened file, or null to start by pasting rows. */
   initialSource: ImportSource | null;
   /** Called after rows are staged. */
-  onImported: (stagedCount: number) => void;
+  onImported: (result: StageResult) => void;
   onClose: () => void;
 }
 
@@ -136,7 +137,7 @@ export function ImportWizard({ clientId, bankAccount, initialSource, onImported,
     setError(null);
     try {
       const result = await window.imports.stage(ref, mapping, [...excluded]);
-      onImported(result.stagedCount);
+      onImported(result);
       onClose();
     } catch (caught) {
       setError(messageOf(caught));
