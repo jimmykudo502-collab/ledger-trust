@@ -33,7 +33,7 @@ The full requirements are in [docs/phase-1-prd.md](docs/phase-1-prd.md). Read it
 1. Project setup and database (done)
 2. Clients and chart of accounts (done)
 3. Bank account tabs and import (done)
-4. Coding grid and posting
+4. Coding grid and posting (done)
 5. Transfer matching and control account review
 6. Manual journal entries
 7. Reports: trial balance, general ledger, balance sheet, income statement
@@ -82,6 +82,7 @@ src/
     templates/       Master chart of accounts template store (JSON file)
     import/          SpreadsheetReader (SheetJS), columnDetection, rowParsing,
                      importDates, duplicates: pure import logic used by ImportService
+    posting/         bankEntryLines (FR-16 debit/credit rule) and pickRule (FR-18)
     ipc/             Thin handlers registered via handleValidated()
     testing/         Test helpers, e.g. TempClientWorkspace
   frontend/          Renderer side
@@ -97,7 +98,9 @@ Vite configs: `vite.main.config.ts`, `vite.preload.config.ts`, `vite.renderer.co
 
 - One SQLite file per client, opened with `ClientDatabaseFactory.open(path)` (foreign keys on, schema migrated). Tests use `IN_MEMORY_DATABASE`.
 - Schema changes are new entries appended to `CLIENT_MIGRATIONS` in `src/backend/db/clientMigrations.ts` (version = previous + 1, tracked in `PRAGMA user_version`). Never edit a migration that has shipped.
-- Tables are `STRICT`; money columns are `INTEGER` cents; dates are `YYYY-MM-DD` text checked with `date(x) IS x`. Journal lines hold a debit or a credit, never both. Entry balancing is enforced by the posting services, since SQLite can't check a multi-row invariant at commit.
+- Tables are `STRICT`; money columns are `INTEGER` cents; dates are `YYYY-MM-DD` text checked with `date(x) IS x`. Journal lines hold a debit or a credit, never both.
+- Every journal entry goes through `JournalService.post`, which checks balance, one-sided lines and real accounts (SQLite can't check a multi-row invariant at commit). Never insert journal rows any other way.
+- Work that spans repositories (e.g. a journal entry plus its staged row's status) runs inside the injected `TransactionRunner`, so it all commits or all rolls back.
 
 ### Adding a new IPC feature
 

@@ -61,7 +61,7 @@ A local desktop app (Electron.js) for a bookkeeper who keeps the books of other 
 - **FR-15** A grid shows date, description, amount, and an editable code column.
 - **FR-16** The debit/credit direction comes from the sign of the amount: money in debits the bank account and credits the coded account; money out credits the bank account and debits the coded account. (Credit card tabs follow the same logic using the card's account type.)
 - **FR-17** Rows without a code cannot be posted.
-- **FR-18** Remembered rules such as "description contains X, use code Y", applied automatically on later imports.
+- **FR-18** Remembered rules such as "description contains X, use code Y", applied automatically on later imports. A rule applies to one tab or every tab; when several match, the longest text wins, then the tab-specific rule, then the newest. Rules never overwrite a code already entered.
 
 ### 4.6 Transfers between a client's own accounts
 
@@ -81,7 +81,7 @@ A local desktop app (Electron.js) for a bookkeeper who keeps the books of other 
 
 ### 4.9 Periods, corrections, and year-end
 
-- **FR-26** While a period is open, the user can edit or delete entries freely.
+- **FR-26** While a period is open, the user can edit or delete entries freely. A posted bank row can be unposted: its entry is removed and the row returns to staging with its code.
 - **FR-27** The user can lock a period. Once a year is locked and rolled forward, changes can only be made with reversing entries, so the original remains visible in the ledger. A locked year can be unlocked again if needed.
 - **FR-28** Year-end close and roll-forward: lock the year, close revenue and expense accounts into retained earnings, and carry the balance sheet balances into the new year as opening balances.
 
