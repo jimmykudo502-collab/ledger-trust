@@ -4,7 +4,47 @@ Guidance for Claude Code when working in this repository.
 
 ## Project
 
-Electron desktop app (package name `agentobi`) built with Electron Forge + Vite, React 19 and TypeScript. It is intended to call LLMs through OpenRouter (`@openrouter/agent`), with `zod` available for schema validation. Secrets (e.g. the OpenRouter API key) are loaded from a `.env` file at the repo root via `dotenv` in the main process. `.env` is git-ignored — never commit it or print its contents.
+**Ledger Trust** is a local, offline desktop bookkeeping app for a single bookkeeper who keeps the books for other people's businesses (clients). The core flow: open a client, import their bank or credit card write-up (.xlsx, .ods or pasted text), code each transaction to an account, post it, and immediately see an updated general ledger, trial balance, balance sheet and income statement, all exportable to PDF and Excel for any date range.
+
+The full requirements are in [docs/phase-1-prd.md](docs/phase-1-prd.md). Read it before planning any feature and reference requirement IDs (`FR-n`) in plans and commit messages.
+
+### Stack
+
+- Electron (Electron Forge + Vite), React 19, TypeScript. Package name is `agentobi`. Windows first.
+- Storage: SQLite via `better-sqlite3`, **one database file per client**.
+- Spreadsheets: SheetJS to read .xlsx/.ods imports and write Excel reports. PDFs use Electron's built-in print-to-PDF.
+- Validation: `zod`.
+- `better-sqlite3` and SheetJS are not installed yet; they arrive with the build phases that need them.
+- `@openrouter/agent` is installed from earlier scaffolding but is **not** part of Phase 1. Don't build features on it, since client data must never leave the machine.
+
+### Domain rules (non-negotiable)
+
+- **Local only:** no network calls, no telemetry, and no client data leaves the machine.
+- **The journal is the single source of truth.** The general ledger, trial balance and financial statements are computed from posted journal lines only and never stored separately (FR-31).
+- **Every journal entry balances:** total debits equal total credits, enforced in the backend, not just the UI (FR-21, FR-24).
+- **Staging before posting:** imported rows sit in staging until posted, and nothing reaches the ledger before that (FR-13). Each journal entry keeps a link to its source row (FR-22).
+- **Clients are fully isolated:** separate chart of accounts, bank accounts, journal and periods per client (FR-2).
+- **Locked periods are immutable:** changes go through reversing entries so the original stays visible (FR-27).
+- Store money as **integer cents**, never floating point; convert only at the import and display edges.
+
+### Phase 1 build order
+
+1. Project setup and database
+2. Clients and chart of accounts
+3. Bank account tabs and import
+4. Coding grid and posting
+5. Transfer matching and control account review
+6. Manual journal entries
+7. Reports: trial balance, general ledger, balance sheet, income statement
+8. Period lock, year-end close and roll-forward
+9. PDF and Excel export
+10. Testing with made-up client data before any real files are used
+
+Treat each step as a phase of a multi-phase plan (see Workflow). Out of scope for Phase 1: A/R and A/P aging, invoicing, payroll, sales tax, inventory, multi-user, cloud sync, bank feeds, bank reconciliation and multi-currency.
+
+### Privacy
+
+Real client financial files must never be committed, logged or pasted into prompts or tests. Use made-up data for fixtures and tests. `.env` is git-ignored; never commit it or print its contents.
 
 ## Commands
 
@@ -64,7 +104,7 @@ Follow the existing HelloWorld slice end to end:
 
 - Make small, focused commits: one logical change per commit (e.g. "add channel + service", then "add preload client + UI"). Don't mix refactors, formatting and behavior changes in one commit.
 - Each commit should build, lint and pass tests on its own.
-- Write imperative, descriptive commit messages (`add OpenRouter chat service`, not `updates`).
+- Write imperative, descriptive commit messages (`add trial balance report (FR-29)`, not `updates`).
 - Commit and push automatically: once a change (or a phase of a plan) is done and passes test, lint and type-check, commit it and push it to the remote right away without asking for permission.
 - Never force-push, rewrite pushed history, or push code that fails test, lint or type-check.
 
@@ -84,25 +124,25 @@ Follow industry-standard best practices for TypeScript, React and Electron (incl
 - **SOLID:**
   - *Single responsibility:* each class, module and component does one thing (services hold logic, handlers only wire IPC, components only render).
   - *Open/closed:* add features by adding new modules (new service, handler, client), not by growing existing ones with conditionals.
-  - *Liskov substitution:* implementations of an interface must be interchangeable (e.g. a fake LLM client in tests behaves like the real one).
+  - *Liskov substitution:* implementations of an interface must be interchangeable (e.g. an in-memory journal repository in tests behaves like the SQLite one).
   - *Interface segregation:* expose small, purpose-specific interfaces (one preload client per feature rather than one large `window.api`).
-  - *Dependency inversion:* services depend on interfaces and receive dependencies through their constructor (e.g. an `LlmClient` interface, not a hard-coded OpenRouter instance), which also makes them testable.
+  - *Dependency inversion:* services depend on interfaces and receive dependencies through their constructor (e.g. a `JournalRepository` interface, not a hard-coded `better-sqlite3` connection), which also makes them testable.
 - Prefer clear names, small functions, early returns, and explicit types at module boundaries. Avoid `any`.
 - Handle errors explicitly. Never swallow them silently, and surface useful messages to the UI.
 
 ## Conventions
 
-- Keep Node/Electron-only code (filesystem, network calls, API keys, OpenRouter) in `backend/`. The renderer must only talk to it through preload-exposed IPC clients — never import `electron` or backend modules from React components.
+- Keep Node/Electron-only code (filesystem, SQLite, file imports and exports) in `backend/`. The renderer must only talk to it through preload-exposed IPC clients — never import `electron` or backend modules from React components.
 - Renderer code must not see secrets; read env vars only in the main process.
 - Backend logic lives in classes; IPC handler files stay thin.
 - Add JSDoc comments to exported functions, classes and methods, matching the existing style.
 - Double quotes, semicolons, trailing commas in multi-line literals.
-- Validate data crossing the IPC boundary or coming back from LLM calls with `zod` where shapes matter.
+- Validate data crossing the IPC boundary and every imported spreadsheet row with `zod`.
 
 ### State management
 
 - Use React's built-in state (`useState`, `useReducer`) for state owned by one component or a small subtree.
-- When state must be shared across multiple components (e.g. conversation history, settings, app-wide loading/error status), use **Zustand**. Don't add it, or any other state library, until that need actually exists, and don't use Redux, MobX or React Context as a global store.
+- When state must be shared across multiple components (e.g. the selected client, staged rows in the coding grid, app-wide loading/error status), use **Zustand**. Don't add it, or any other state library, until that need actually exists, and don't use Redux, MobX or React Context as a global store.
 - Stores live in `src/frontend/stores/` as `use<Feature>Store.ts`, one store per feature (not one global store).
 - Stores hold UI state only. Secrets, API calls and persistent data stay in the main process; store actions call the preload IPC clients (`window.<feature>`) and keep the results.
 - Keep store logic testable: put state transitions in pure functions and cover them with property-based tests.
