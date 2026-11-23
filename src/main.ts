@@ -4,6 +4,7 @@ import path from "node:path";
 import started from "electron-squirrel-startup";
 import { createBackend } from "./backend/createBackend";
 import { registerAccountTemplateHandlers } from "./backend/ipc/AccountTemplateHandlers";
+import { registerBankAccountHandlers } from "./backend/ipc/BankAccountHandlers";
 import { registerChartOfAccountsHandlers } from "./backend/ipc/ChartOfAccountsHandlers";
 import { registerClientHandlers } from "./backend/ipc/ClientHandlers";
 
@@ -49,6 +50,7 @@ const backend = createBackend(
 registerClientHandlers(ipcMain, backend.clients);
 registerChartOfAccountsHandlers(ipcMain, backend.chartOfAccounts);
 registerAccountTemplateHandlers(ipcMain, backend.accountTemplates);
+registerBankAccountHandlers(ipcMain, backend.bankAccounts);
 
 app.on("will-quit", () => {
   backend.dispose();

@@ -3,9 +3,11 @@ import path from "node:path";
 import { ClientConnectionPool } from "./db/ClientConnectionPool";
 import { ClientDatabaseFactory } from "./db/ClientDatabaseFactory";
 import { ClientFileStore } from "./db/ClientFileStore";
+import { SqliteBankAccountRepository } from "./repositories/BankAccountRepository";
 import { SqliteAccountRepository } from "./repositories/SqliteAccountRepository";
 import { SqliteClientRepository } from "./repositories/SqliteClientRepository";
 import { AccountTemplateService } from "./services/AccountTemplateService";
+import { BankAccountService } from "./services/BankAccountService";
 import { ChartOfAccountsService } from "./services/ChartOfAccountsService";
 import { ClientService } from "./services/ClientService";
 import { JsonFileTemplateStore } from "./templates/TemplateStore";
@@ -15,6 +17,7 @@ export interface Backend {
   readonly clients: ClientService;
   readonly chartOfAccounts: ChartOfAccountsService;
   readonly accountTemplates: AccountTemplateService;
+  readonly bankAccounts: BankAccountService;
   /** Closes every open client database. */
   dispose(): void;
 }
@@ -43,10 +46,16 @@ export const createBackend = (dataDirectory: string): Backend => {
     chartOfAccounts,
   );
 
+  const bankAccounts = new BankAccountService(
+    (clientId) => new SqliteBankAccountRepository(pool.get(clientId)),
+    chartOfAccounts,
+  );
+
   return {
     clients,
     chartOfAccounts,
     accountTemplates,
+    bankAccounts,
     dispose: () => pool.closeAll(),
   };
 };

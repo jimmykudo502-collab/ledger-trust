@@ -63,6 +63,15 @@ export class ChartOfAccountsService implements ClientInitializer {
   }
 
   /**
+   * Finds an account by id.
+   * @param clientId The client.
+   * @param accountId The account's id.
+   */
+  public find(clientId: string, accountId: number): Account | undefined {
+    return this.repo(clientId).find(accountIdSchema.parse(accountId));
+  }
+
+  /**
    * Finds an account by its code, e.g. one typed in the coding grid (FR-6).
    * @param clientId The client.
    * @param code The code to look up (surrounding spaces are ignored).

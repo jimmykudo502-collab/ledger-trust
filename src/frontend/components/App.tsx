@@ -1,8 +1,7 @@
 import { useEffect } from "react";
 
 import { useClientStore } from "../stores/useClientStore";
-import { ChartOfAccounts } from "./accounts/ChartOfAccounts";
-import { ClientHeader } from "./clients/ClientHeader";
+import { ClientWorkspace } from "./clients/ClientWorkspace";
 import { ClientSidebar } from "./clients/ClientSidebar";
 
 /**
@@ -24,10 +23,7 @@ export function App() {
       <ClientSidebar />
       <main className="workspace">
         {selectedClient ? (
-          <>
-            <ClientHeader client={selectedClient} />
-            <ChartOfAccounts key={selectedClient.id} clientId={selectedClient.id} />
-          </>
+          <ClientWorkspace key={selectedClient.id} client={selectedClient} />
         ) : (
           <div className="empty-state">
             <h2>No client open</h2>

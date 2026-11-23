@@ -1,4 +1,4 @@
-import type { IpcMain } from "electron";
+import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { z } from "zod";
 
 import type { IpcResult } from "../../common/ipc/IpcResult";
@@ -24,18 +24,19 @@ export const toErrorMessage = (error: unknown): string => {
  * @param ipcMain Electron's main-process IPC.
  * @param channel The channel name from `APP_CHANNELS`.
  * @param requestSchema Schema the renderer's argument must match.
- * @param handler Does the work with the validated request.
+ * @param handler Does the work with the validated request; it also gets the
+ *   IPC event, e.g. to parent a file dialog to the calling window.
  */
 export const handleValidated = <Schema extends z.ZodType, Result>(
   ipcMain: IpcMain,
   channel: string,
   requestSchema: Schema,
-  handler: (request: z.infer<Schema>) => Result,
+  handler: (request: z.infer<Schema>, event: IpcMainInvokeEvent) => Result,
 ): void => {
-  ipcMain.handle(channel, async (_event, payload: unknown): Promise<IpcResult<Result>> => {
+  ipcMain.handle(channel, async (event, payload: unknown): Promise<IpcResult<Awaited<Result>>> => {
     try {
       const request = requestSchema.parse(payload);
-      return { ok: true, value: await handler(request) };
+      return { ok: true, value: await handler(request, event) };
     } catch (error) {
       if (!(error instanceof UserFacingError) && !(error instanceof z.ZodError)) {
         console.error(`IPC handler for ${channel} failed:`, error);

@@ -170,9 +170,7 @@ h3 {
   justify-content: space-between;
   align-items: flex-start;
   gap: 1rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .client-title {
@@ -415,4 +413,89 @@ select:focus {
   background: var(--accent-soft);
   border-radius: var(--radius);
   padding: 0.5rem 0.7rem;
+}
+
+/* Tabs */
+
+.tab-bar {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1rem;
+  overflow-x: auto;
+}
+
+.tab {
+  font: inherit;
+  background: transparent;
+  color: var(--muted);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 0.55rem 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+.tab.add {
+  color: var(--accent);
+}
+
+.panel-header h3 {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* Form bits */
+
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 0.9rem;
+}
+
+.segmented label {
+  padding: 0.35rem 0.9rem;
+  cursor: pointer;
+}
+
+.segmented label.selected {
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.segmented input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.field-label {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 0.25rem 0 0.4rem;
+}
+
+.radio-line {
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.indent {
+  margin-left: 1.6rem;
 }
