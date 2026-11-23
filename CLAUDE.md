@@ -65,7 +65,8 @@ Follow the existing HelloWorld slice end to end:
 - Make small, focused commits: one logical change per commit (e.g. "add channel + service", then "add preload client + UI"). Don't mix refactors, formatting and behavior changes in one commit.
 - Each commit should build, lint and pass tests on its own.
 - Write imperative, descriptive commit messages (`add OpenRouter chat service`, not `updates`).
-- Commit automatically: once a change (or a phase of a plan) is done and passes test, lint and type-check, commit it right away without asking for permission. This does not cover pushing: never push without being asked.
+- Commit and push automatically: once a change (or a phase of a plan) is done and passes test, lint and type-check, commit it and push it to the remote right away without asking for permission.
+- Never force-push, rewrite pushed history, or push code that fails test, lint or type-check.
 
 ### Testing
 
