@@ -3,12 +3,15 @@ import path from "node:path";
 import { ClientConnectionPool } from "./db/ClientConnectionPool";
 import { ClientDatabaseFactory } from "./db/ClientDatabaseFactory";
 import { ClientFileStore } from "./db/ClientFileStore";
+import { SqliteAccountRepository } from "./repositories/SqliteAccountRepository";
 import { SqliteClientRepository } from "./repositories/SqliteClientRepository";
+import { ChartOfAccountsService } from "./services/ChartOfAccountsService";
 import { ClientService } from "./services/ClientService";
 
 /** The wired-up backend services plus a way to shut them down. */
 export interface Backend {
   readonly clients: ClientService;
+  readonly chartOfAccounts: ChartOfAccountsService;
   /** Closes every open client database. */
   dispose(): void;
 }
@@ -21,12 +24,17 @@ export interface Backend {
 export const createBackend = (dataDirectory: string): Backend => {
   const fileStore = new ClientFileStore(path.join(dataDirectory, "clients"));
   const pool = new ClientConnectionPool(fileStore, new ClientDatabaseFactory());
+  const chartOfAccounts = new ChartOfAccountsService(
+    (clientId) => new SqliteAccountRepository(pool.get(clientId)),
+  );
   const clients = new ClientService(
     new SqliteClientRepository(fileStore, pool),
+    [chartOfAccounts],
   );
 
   return {
     clients,
+    chartOfAccounts,
     dispose: () => pool.closeAll(),
   };
 };

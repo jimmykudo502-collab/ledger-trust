@@ -2,6 +2,7 @@ import type { Database } from "better-sqlite3";
 
 import type { ClientId } from "../../common/clients/clientSchemas";
 import type { ClientDatabaseFactory } from "./ClientDatabaseFactory";
+import { UserFacingError } from "../errors";
 import type { ClientFileStore } from "./ClientFileStore";
 
 /**
@@ -21,16 +22,36 @@ export class ClientConnectionPool {
   ) {}
 
   /**
-   * Returns the open connection for a client, opening (and creating) its
-   * database file if needed.
+   * Returns the open connection for an existing client, opening its database
+   * file if needed.
    * @param clientId The client's id.
+   * @throws UserFacingError if the client has no database file.
    */
   public get(clientId: ClientId): Database {
     const existing = this.connections.get(clientId);
     if (existing) {
       return existing;
     }
+    if (!this.fileStore.exists(clientId)) {
+      throw new UserFacingError("That client no longer exists.");
+    }
+    return this.open(clientId);
+  }
+
+  /**
+   * Creates the database file for a new client and returns its connection.
+   * @param clientId An id from `ClientFileStore.newClientId()`.
+   * @throws Error if the client already has a database file.
+   */
+  public create(clientId: ClientId): Database {
+    if (this.fileStore.exists(clientId)) {
+      throw new Error(`Client ${clientId} already has a database file.`);
+    }
     this.fileStore.ensureDirectory();
+    return this.open(clientId);
+  }
+
+  private open(clientId: ClientId): Database {
     const db = this.factory.open(this.fileStore.pathFor(clientId));
     this.connections.set(clientId, db);
     return db;

@@ -61,7 +61,7 @@ export class SqliteClientRepository implements ClientRepository {
   public create(input: CreateClientInput): ClientSummary {
     const id = this.fileStore.newClientId();
     this.pool
-      .get(id)
+      .create(id)
       .prepare(
         `INSERT INTO client_profile (id, name, fiscal_year_end_month, fiscal_year_end_day)
          VALUES (1, ?, ?, ?)`,
