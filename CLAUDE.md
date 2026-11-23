@@ -112,14 +112,11 @@ Update this file (and `docs/phase-1-prd.md` when requirements change) whenever i
 
 Keep edits short and specific, put them in the matching section, remove anything outdated instead of piling on, and mention the update in the summary to the user. Commit instruction changes with the change that caused them, or on their own if there is no code change.
 
-### Plan before coding
+### Plan, then build
 
-- Always write a plan and share it before making any code change. The plan names the files to touch, the approach, and how the change will be tested. Wait for approval before implementing.
-- For a large change (several features, many files, or a refactor across layers), write a **multi-phase plan**. Each phase must:
-  - be small enough to review on its own,
-  - leave the app building, linting and passing tests,
-  - state its goal, the files it touches, and how it is verified.
-  Finish and commit one phase before starting the next, and check in after each phase.
+- Plan internally before coding, but don't share the plan or wait for approval: the user wants to see working software, not plans. Ask only when a decision genuinely can't be made from the PRD or sensible defaults.
+- Work through each build-order step (a "module") as a series of small phases. Each phase must leave the app building, linting and passing tests, and is committed and pushed on its own.
+- Don't check in after each phase. When a whole module is done, launch the app (`pnpm start`) so the user can test it, and tell them briefly what to try and any decisions made along the way.
 
 ### Commits
 
