@@ -44,7 +44,7 @@ beforeEach(() => {
     chart,
   );
   const stagingFor = (id: string) => new SqliteStagingRepository(workspace.pool.get(id));
-  imports = new ImportService(new SpreadsheetReader(), bankAccounts, stagingFor, { suggester: () => () => null });
+  imports = new ImportService(new SpreadsheetReader(), bankAccounts, stagingFor, { suggester: () => () => null }, { autoMatch: () => 0 });
   staging = new StagingService(stagingFor, bankAccounts);
   clientId = new ClientService(workspace.clients, [chart]).create({
     name: "Made-up Rentals",

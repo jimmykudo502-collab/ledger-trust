@@ -122,6 +122,8 @@ export interface SheetAnalysis {
 export interface StageResult {
   readonly batchId: number;
   readonly stagedCount: number;
+  /** Transfers between the client's own tabs matched automatically (FR-19). */
+  readonly matchedTransfers: number;
 }
 
 const tokenSchema = z.uuid();

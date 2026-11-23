@@ -75,7 +75,7 @@ describe("CodingRuleService", () => {
     const stagingFor = (id: string) => new SqliteStagingRepository(workspace.pool.get(id));
     rules = new CodingRuleService((id) => new SqliteCodingRuleRepository(workspace.pool.get(id)), stagingFor, bankAccounts, chart);
     coding = new CodingService(stagingFor, bankAccounts, chart);
-    imports = new ImportService(new SpreadsheetReader(), bankAccounts, stagingFor, rules);
+    imports = new ImportService(new SpreadsheetReader(), bankAccounts, stagingFor, rules, { autoMatch: () => 0 });
     clientId = new ClientService(workspace.clients, [chart]).create({ name: "Made-up Rentals", fiscalYearEnd: "2026-12-31" }).id;
     tabId = bankAccounts.create(clientId, { name: "Chequing", kind: "bank", ledger: { mode: "new", code: "1000" } }).id;
     chart.create(clientId, { code: "5200", name: "Utilities", type: "expense" });

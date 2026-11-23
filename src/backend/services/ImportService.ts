@@ -18,6 +18,7 @@ import type { RawSheet, SpreadsheetReader } from "../import/SpreadsheetReader";
 import type { StagingRepository } from "../repositories/StagingRepository";
 import type { BankAccountService } from "./BankAccountService";
 import type { RuleSuggester } from "./CodingRuleService";
+import type { TransferAutoMatcher } from "./TransferService";
 
 /** Gives the staging repository for one client. */
 export type StagingRepositoryProvider = (clientId: string) => StagingRepository;
@@ -46,6 +47,7 @@ export class ImportService {
    * @param bankAccounts Resolves the tab being imported into.
    * @param stagingFor Returns the staging repository for a client.
    * @param rules Codes new rows from remembered rules (FR-18).
+   * @param transfers Matches transfers between tabs after staging (FR-19).
    * @param newToken Source of tokens (injectable for tests).
    */
   public constructor(
@@ -53,6 +55,7 @@ export class ImportService {
     private readonly bankAccounts: BankAccountService,
     private readonly stagingFor: StagingRepositoryProvider,
     private readonly rules: RuleSuggester,
+    private readonly transfers: TransferAutoMatcher,
     private readonly newToken: () => string = randomUUID,
   ) {}
 
@@ -134,7 +137,8 @@ export class ImportService {
       rows,
     );
     this.sources.delete(ref.token);
-    return { batchId, stagedCount: rows.length };
+    const matchedTransfers = this.transfers.autoMatch(ref.clientId);
+    return { batchId, stagedCount: rows.length, matchedTransfers };
   }
 
   /**
