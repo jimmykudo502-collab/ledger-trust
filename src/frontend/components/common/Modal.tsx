@@ -13,6 +13,10 @@ interface ModalFormProps {
   onSubmit: () => void;
   /** Called when the dialog is cancelled (button or Escape). */
   onClose: () => void;
+  /** Use the wide layout, e.g. for the import preview. */
+  wide?: boolean;
+  /** Disables the submit button, e.g. while there is nothing to submit. */
+  submitDisabled?: boolean;
   children: ReactNode;
 }
 
@@ -27,6 +31,8 @@ export function ModalForm({
   busy,
   onSubmit,
   onClose,
+  wide = false,
+  submitDisabled = false,
   children,
 }: ModalFormProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -46,7 +52,7 @@ export function ModalForm({
   return (
     <dialog
       ref={dialogRef}
-      className="modal"
+      className={wide ? "modal wide" : "modal"}
       onCancel={(event) => {
         event.preventDefault();
         onClose();
@@ -64,7 +70,7 @@ export function ModalForm({
           <button type="button" className="button" onClick={onClose}>
             Cancel
           </button>
-          <button type="submit" className="button primary" disabled={busy}>
+          <button type="submit" className="button primary" disabled={busy || submitDisabled}>
             {busy ? "Saving…" : submitLabel}
           </button>
         </div>

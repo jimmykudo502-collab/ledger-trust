@@ -499,3 +499,115 @@ select:focus {
 .indent {
   margin-left: 1.6rem;
 }
+
+/* Import */
+
+.modal.wide {
+  width: min(1100px, 94vw);
+}
+
+.paste-box {
+  width: 100%;
+  min-height: 260px;
+  font: 13px/1.4 Consolas, "Courier New", monospace;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.6rem;
+  resize: vertical;
+}
+
+.mapping-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0 0.75rem;
+}
+
+.preview-summary {
+  padding: 0.5rem 0.7rem;
+  border-radius: var(--radius);
+  background: var(--bg);
+  margin-bottom: 0.5rem;
+}
+
+.preview-scroll {
+  max-height: 45vh;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.preview-scroll thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+}
+
+.data-table.compact td,
+.data-table.compact th {
+  padding: 0.3rem 0.5rem;
+}
+
+.data-table .money {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+tr.excluded td {
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--border);
+}
+
+tr.excluded td:first-child {
+  text-decoration: none;
+}
+
+.problem {
+  color: var(--danger);
+  font-size: 0.85rem;
+}
+
+.warning {
+  color: #b54708;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+@media (prefers-color-scheme: dark) {
+  .warning {
+    color: #fdb022;
+  }
+}
+
+.batch {
+  margin-top: 1rem;
+}
+
+.batch-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.4rem;
+}
+
+.badge.posted {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.empty-panel {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.empty-panel p {
+  margin: 0.25rem 0;
+}
+
+.notice {
+  margin: 0.5rem 0;
+}
