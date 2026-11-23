@@ -187,9 +187,28 @@ const transferMatches: Migration = {
   `,
 };
 
+/**
+ * Year-end support (FR-27, FR-28): each fiscal year remembers the closing
+ * entry posted for it, and client settings hold choices such as the
+ * retained earnings account.
+ */
+const yearEnd: Migration = {
+  version: 4,
+  name: "year-end close",
+  sql: `
+    ALTER TABLE fiscal_years ADD COLUMN closing_entry_id INTEGER REFERENCES journal_entries (id);
+
+    CREATE TABLE client_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    ) STRICT;
+  `,
+};
+
 /** Every client database migration, oldest first. */
 export const CLIENT_MIGRATIONS: readonly Migration[] = [
   initialSchema,
   fiscalYearEndDate,
   transferMatches,
+  yearEnd,
 ];

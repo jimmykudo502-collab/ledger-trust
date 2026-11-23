@@ -13,6 +13,9 @@ import {
   type ReportKind,
   type TrialBalance,
 } from "../../../common/reports/reportSchemas";
+import type { FiscalYearView } from "../../../common/years/yearSchemas";
+import { lockedYearFor } from "../years/yearLogic";
+import { ReverseDialog } from "../years/ReverseDialog";
 import { presetRange, RANGE_PRESET_LABELS, type RangePreset } from "./reportRangeLogic";
 import { BalanceSheetView, GeneralLedgerView, IncomeStatementView, TrialBalanceView } from "./ReportViews";
 
@@ -49,10 +52,14 @@ export function Reports({ client }: ReportsProps) {
   const [report, setReport] = useState<LoadedReport | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [years, setYears] = useState<FiscalYearView[]>([]);
+  const [reversing, setReversing] = useState<{ id: number; date: string; description: string } | null>(null);
+  const [refresh, setRefresh] = useState(0);
 
   useEffect(() => {
     window.chartOfAccounts.list(client.id).then(setAccounts, () => setAccounts([]));
-  }, [client.id]);
+    window.yearEnd.overview(client.id).then((overview) => setYears([...overview.years]), () => setYears([]));
+  }, [client.id, refresh]);
 
   useEffect(() => {
     if (range.from > range.to) {
@@ -83,7 +90,7 @@ export function Reports({ client }: ReportsProps) {
     return () => {
       cancelled = true;
     };
-  }, [client.id, kind, range, includeClosing, accountId]);
+  }, [client.id, kind, range, includeClosing, accountId, refresh]);
 
   const openAccount = (id: number) => {
     setBackTo(kind);
@@ -165,10 +172,27 @@ export function Reports({ client }: ReportsProps) {
 
       {report?.kind === "trialBalance" && kind === "trialBalance" && <TrialBalanceView report={report.data} onOpenAccount={openAccount} />}
       {report?.kind === "generalLedger" && kind === "generalLedger" && (
-        <GeneralLedgerView report={report.data} accounts={accounts} accountId={accountId} onAccountChange={setAccountId} />
+        <GeneralLedgerView
+          report={report.data}
+          accounts={accounts}
+          accountId={accountId}
+          onAccountChange={setAccountId}
+          isLocked={(date) => lockedYearFor(years, date) !== undefined}
+          onReverse={setReversing}
+        />
       )}
       {report?.kind === "balanceSheet" && kind === "balanceSheet" && <BalanceSheetView report={report.data} onOpenAccount={openAccount} />}
       {report?.kind === "incomeStatement" && kind === "incomeStatement" && <IncomeStatementView report={report.data} onOpenAccount={openAccount} />}
+
+      {reversing && (
+        <ReverseDialog
+          clientId={client.id}
+          entry={reversing}
+          years={years}
+          onReversed={() => setRefresh((n) => n + 1)}
+          onClose={() => setReversing(null)}
+        />
+      )}
     </section>
   );
 }

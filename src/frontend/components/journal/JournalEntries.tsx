@@ -3,6 +3,9 @@ import { useCallback, useEffect, useState } from "react";
 import type { Account } from "../../../common/accounts/accountSchemas";
 import { entryTotals, type JournalEntryView, type JournalSource } from "../../../common/journal/journalSchemas";
 import { formatCents } from "../../../common/money";
+import type { FiscalYearView } from "../../../common/years/yearSchemas";
+import { lockedYearFor } from "../years/yearLogic";
+import { ReverseDialog } from "../years/ReverseDialog";
 import { EntryEditor } from "./EntryEditor";
 
 interface JournalEntriesProps {
@@ -28,15 +31,19 @@ export function JournalEntries({ clientId }: JournalEntriesProps) {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [editing, setEditing] = useState<{ entry?: JournalEntryView } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [years, setYears] = useState<FiscalYearView[]>([]);
+  const [reversing, setReversing] = useState<JournalEntryView | null>(null);
 
   const reload = useCallback(async () => {
     try {
-      const [nextEntries, nextAccounts] = await Promise.all([
+      const [nextEntries, nextAccounts, overview] = await Promise.all([
         window.journalEntries.list(clientId),
         window.chartOfAccounts.list(clientId),
+        window.yearEnd.overview(clientId),
       ]);
       setEntries(nextEntries);
       setAccounts(nextAccounts);
+      setYears([...overview.years]);
     } catch (caught) {
       setError(messageOf(caught));
     }
@@ -91,7 +98,12 @@ export function JournalEntries({ clientId }: JournalEntriesProps) {
               </div>
               <div className="panel-actions">
                 <span className="muted">{formatCents(entryTotals(entry.lines).debitCents)}</span>
-                {entry.source === "manual" && entry.reversedByEntryId === null && (
+                {entry.source === "manual" && entry.reversedByEntryId === null && lockedYearFor(years, entry.date) && (
+                  <button type="button" className="button small" onClick={() => setReversing(entry)}>
+                    Reverse…
+                  </button>
+                )}
+                {entry.source === "manual" && entry.reversedByEntryId === null && !lockedYearFor(years, entry.date) && (
                   <>
                     <button type="button" className="button small" onClick={() => setEditing({ entry })}>
                       Edit
@@ -122,6 +134,15 @@ export function JournalEntries({ clientId }: JournalEntriesProps) {
         ))
       )}
 
+      {reversing && (
+        <ReverseDialog
+          clientId={clientId}
+          entry={reversing}
+          years={years}
+          onReversed={() => void reload()}
+          onClose={() => setReversing(null)}
+        />
+      )}
       {editing && (
         <EntryEditor
           clientId={clientId}

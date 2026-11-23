@@ -77,10 +77,14 @@ interface GeneralLedgerViewProps {
   accounts: readonly Account[];
   accountId: number | null;
   onAccountChange: (accountId: number | null) => void;
+  /** Whether a date is in a locked fiscal year. */
+  isLocked: (date: string) => boolean;
+  /** Opens the reversal dialog for an entry. */
+  onReverse: (entry: { id: number; date: string; description: string }) => void;
 }
 
 /** General ledger (FR-29): every posted line, per account, with running balances. */
-export function GeneralLedgerView({ report, accounts, accountId, onAccountChange }: GeneralLedgerViewProps) {
+export function GeneralLedgerView({ report, accounts, accountId, onAccountChange, isLocked, onReverse }: GeneralLedgerViewProps) {
   return (
     <>
       <label className="field inline-field">
@@ -109,6 +113,7 @@ export function GeneralLedgerView({ report, accounts, accountId, onAccountChange
                 <th className="money">Debit</th>
                 <th className="money">Credit</th>
                 <th className="money">Balance</th>
+                <th aria-label="Actions" />
               </tr>
             </thead>
             <tbody>
@@ -116,6 +121,7 @@ export function GeneralLedgerView({ report, accounts, accountId, onAccountChange
                 <td className="nowrap">{report.range.from}</td>
                 <td colSpan={4}>Opening balance</td>
                 <td className="money">{formatDrCr(account.openingCents)}</td>
+                <td />
               </tr>
               {account.lines.map((line, index) => (
                 <tr key={`${line.entryId}-${index}`}>
@@ -128,11 +134,23 @@ export function GeneralLedgerView({ report, accounts, accountId, onAccountChange
                   <td className="money">{amount(line.debitCents)}</td>
                   <td className="money">{amount(line.creditCents)}</td>
                   <td className="money">{formatDrCr(line.balanceCents)}</td>
+                  <td className="row-actions">
+                    {isLocked(line.date) && line.source !== "reversal" && line.source !== "year_end_close" && (
+                      <button
+                        type="button"
+                        className="button small"
+                        title="This entry is in a locked year; post a reversing entry to correct it"
+                        onClick={() => onReverse({ id: line.entryId, date: line.date, description: line.description })}
+                      >
+                        Reverse…
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
               {account.lines.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="muted">
+                  <td colSpan={7} className="muted">
                     No activity in this period.
                   </td>
                 </tr>
@@ -145,6 +163,7 @@ export function GeneralLedgerView({ report, accounts, accountId, onAccountChange
                 <td className="money">{formatCents(account.debitCents)}</td>
                 <td className="money">{formatCents(account.creditCents)}</td>
                 <td className="money">{formatDrCr(account.closingCents)}</td>
+                <td />
               </tr>
             </tfoot>
           </table>

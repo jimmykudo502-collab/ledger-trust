@@ -13,6 +13,7 @@ import { registerJournalEntryHandlers } from "./backend/ipc/JournalEntryHandlers
 import { registerReportHandlers } from "./backend/ipc/ReportHandlers";
 import { registerStagingHandlers } from "./backend/ipc/StagingHandlers";
 import { registerTransferHandlers } from "./backend/ipc/TransferHandlers";
+import { registerYearEndHandlers } from "./backend/ipc/YearEndHandlers";
 
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
@@ -63,6 +64,7 @@ registerCodingRuleHandlers(ipcMain, backend.codingRules);
 registerTransferHandlers(ipcMain, backend.transfers);
 registerJournalEntryHandlers(ipcMain, backend.manualEntries);
 registerReportHandlers(ipcMain, backend.reports);
+registerYearEndHandlers(ipcMain, backend.fiscalYears);
 
 app.on("will-quit", () => {
   backend.dispose();

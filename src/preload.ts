@@ -8,6 +8,7 @@ import { exposeJournalEntriesClient } from "./frontend/ipc/JournalEntriesClient"
 import { exposeReportsClient } from "./frontend/ipc/ReportsClient";
 import { exposeStagingClient } from "./frontend/ipc/StagingClient";
 import { exposeTransfersClient } from "./frontend/ipc/TransfersClient";
+import { exposeYearEndClient } from "./frontend/ipc/YearEndClient";
 
 exposeClientsClient();
 exposeChartOfAccountsClient();
@@ -19,3 +20,4 @@ exposeCodingRulesClient();
 exposeTransfersClient();
 exposeJournalEntriesClient();
 exposeReportsClient();
+exposeYearEndClient();

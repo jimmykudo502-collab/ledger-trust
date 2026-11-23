@@ -10,6 +10,7 @@ import { SqliteCodingRuleRepository } from "./repositories/CodingRuleRepository"
 import { SqliteJournalRepository } from "./repositories/JournalRepository";
 import { SqliteAccountRepository } from "./repositories/SqliteAccountRepository";
 import { SqliteClientRepository } from "./repositories/SqliteClientRepository";
+import { SqliteFiscalYearRepository } from "./repositories/FiscalYearRepository";
 import { SqliteReportRepository } from "./repositories/ReportRepository";
 import { SqliteStagingRepository } from "./repositories/StagingRepository";
 import { SqliteTransferMatchRepository } from "./repositories/TransferMatchRepository";
@@ -22,6 +23,7 @@ import { CodingRuleService } from "./services/CodingRuleService";
 import { CodingService } from "./services/CodingService";
 import { ImportService } from "./services/ImportService";
 import { JournalService } from "./services/JournalService";
+import { FiscalYearService } from "./services/FiscalYearService";
 import { ManualEntryService } from "./services/ManualEntryService";
 import { ReportService } from "./services/ReportService";
 import { StagingService } from "./services/StagingService";
@@ -42,6 +44,7 @@ export interface Backend {
   readonly transfers: TransferService;
   readonly manualEntries: ManualEntryService;
   readonly reports: ReportService;
+  readonly fiscalYears: FiscalYearService;
   /** Closes every open client database. */
   dispose(): void;
 }
@@ -58,10 +61,8 @@ export const createBackend = (dataDirectory: string): Backend => {
   const chartOfAccounts = new ChartOfAccountsService(
     (clientId) => new SqliteAccountRepository(pool.get(clientId)),
   );
-  const clients = new ClientService(
-    new SqliteClientRepository(fileStore, pool),
-    [chartOfAccounts],
-  );
+  const clientRepository = new SqliteClientRepository(fileStore, pool);
+  const clients = new ClientService(clientRepository, [chartOfAccounts]);
 
   const accountTemplates = new AccountTemplateService(
     new JsonFileTemplateStore(
@@ -86,6 +87,17 @@ export const createBackend = (dataDirectory: string): Backend => {
   const inTransaction: TransactionRunner = (clientId, work) => pool.get(clientId).transaction(work)();
   const journal = new JournalService((clientId) => new SqliteJournalRepository(pool.get(clientId)), chartOfAccounts);
   const coding = new CodingService(stagingFor, bankAccounts, chartOfAccounts);
+  const reportsFor = (clientId: string) => new SqliteReportRepository(pool.get(clientId));
+  const fiscalYears = new FiscalYearService(
+    (clientId) => new SqliteFiscalYearRepository(pool.get(clientId)),
+    reportsFor,
+    clientRepository,
+    journal,
+    chartOfAccounts,
+    inTransaction,
+  );
+  // Nothing dated in a locked fiscal year can be posted, changed or removed.
+  journal.usePeriodGuard(fiscalYears);
   const posting = new BankPostingService(stagingFor, bankAccounts, journal, inTransaction);
   const transfers = new TransferService(
     stagingFor,
@@ -109,7 +121,8 @@ export const createBackend = (dataDirectory: string): Backend => {
     codingRules,
     transfers,
     manualEntries: new ManualEntryService(journal),
-    reports: new ReportService((clientId) => new SqliteReportRepository(pool.get(clientId))),
+    reports: new ReportService(reportsFor),
+    fiscalYears,
     dispose: () => pool.closeAll(),
   };
 };

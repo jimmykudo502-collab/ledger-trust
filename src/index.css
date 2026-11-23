@@ -903,3 +903,27 @@ tr.clickable:hover .link-like {
   border-bottom: 3px double var(--text);
   padding-top: 0.6rem;
 }
+
+/* Year-end */
+
+.badge.status-locked {
+  background: #fef0c7;
+  color: #93370d;
+}
+
+.badge.status-closed {
+  background: #d1fadf;
+  color: #05603a;
+}
+
+@media (prefers-color-scheme: dark) {
+  .badge.status-locked {
+    background: #4e3b10;
+    color: #fedf89;
+  }
+
+  .badge.status-closed {
+    background: #10392a;
+    color: #a6f4c5;
+  }
+}
