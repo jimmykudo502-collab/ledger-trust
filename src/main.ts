@@ -7,6 +7,7 @@ import { registerAccountTemplateHandlers } from "./backend/ipc/AccountTemplateHa
 import { registerBankAccountHandlers } from "./backend/ipc/BankAccountHandlers";
 import { registerChartOfAccountsHandlers } from "./backend/ipc/ChartOfAccountsHandlers";
 import { registerClientHandlers } from "./backend/ipc/ClientHandlers";
+import { registerCodingRuleHandlers } from "./backend/ipc/CodingRuleHandlers";
 import { registerImportHandlers } from "./backend/ipc/ImportHandlers";
 import { registerStagingHandlers } from "./backend/ipc/StagingHandlers";
 
@@ -55,6 +56,7 @@ registerAccountTemplateHandlers(ipcMain, backend.accountTemplates);
 registerBankAccountHandlers(ipcMain, backend.bankAccounts);
 registerImportHandlers(ipcMain, backend.imports);
 registerStagingHandlers(ipcMain, backend.staging, backend.coding, backend.posting);
+registerCodingRuleHandlers(ipcMain, backend.codingRules);
 
 app.on("will-quit", () => {
   backend.dispose();
