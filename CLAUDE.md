@@ -91,6 +91,18 @@ Follow the existing HelloWorld slice end to end:
 
 ## Workflow
 
+### Keep these instructions current
+
+Update this file (and `docs/phase-1-prd.md` when requirements change) whenever it makes sense, as part of the same change rather than as an afterthought. Typical triggers:
+
+- A new dependency, command, script or tool is added or removed.
+- The folder structure, architecture or a recurring pattern changes (e.g. the IPC recipe, a new `stores/` or `db/` layout).
+- A decision is made or an open question in the PRD is answered.
+- The user corrects how something should be done, or states a new preference.
+- Something here turns out to be wrong, stale or missing (e.g. a phase in the build order is finished).
+
+Keep edits short and specific, put them in the matching section, remove anything outdated instead of piling on, and mention the update in the summary to the user. Commit instruction changes with the change that caused them, or on their own if there is no code change.
+
 ### Plan before coding
 
 - Always write a plan and share it before making any code change. The plan names the files to touch, the approach, and how the change will be tested. Wait for approval before implementing.
