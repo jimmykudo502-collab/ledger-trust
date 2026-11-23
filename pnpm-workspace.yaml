@@ -7,3 +7,5 @@ blockExoticSubdeps: false
 packages:
   - "."
 nodeLinker: hoisted
+overrides:
+  yauzl: 3.3.1

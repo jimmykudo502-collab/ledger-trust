@@ -14,7 +14,7 @@ The full requirements are in [docs/phase-1-prd.md](docs/phase-1-prd.md). Read it
 - Storage: SQLite via `better-sqlite3`, **one database file per client**.
 - Spreadsheets: SheetJS to read .xlsx/.ods imports and write Excel reports. PDFs use Electron's built-in print-to-PDF.
 - Validation: `zod`. Shared UI state: `zustand` (see State management).
-- `better-sqlite3` (13.x) ships Node-API prebuilds that load in both Node (Vitest) and Electron, so there is no native rebuild step: Forge's `rebuildConfig.ignoreModules` skips it and `vite.main.config.ts` marks it external. Client databases use SQLite's default rollback journal, not WAL, so a closed client is one file that can be copied as a backup. Known gap: the Forge Vite plugin only packages `.vite/`, so `pnpm package`/`make` builds do not yet include `better-sqlite3`; fix this before distributing (phase 9).
+- `better-sqlite3` (13.x) ships Node-API prebuilds that load in both Node (Vitest) and Electron, so there is no native rebuild step: Forge's `rebuildConfig.ignoreModules` skips it and `vite.main.config.ts` marks it external. Client databases use SQLite's default rollback journal, not WAL, so a closed client is one file that can be copied as a backup. Because the Forge Vite plugin only packages `.vite/`, a `packageAfterCopy` hook in `forge.config.ts` copies better-sqlite3's `lib/`, `package.json` and `prebuilds/` into the package, and `AutoUnpackNativesPlugin` keeps the `.node` binary outside the asar.
 - SheetJS (`xlsx`) is installed from the official CDN tarball (`https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz`), not the outdated npm registry copy. Read files with `cellNF: true` and convert date cells via `XLSX.SSF.parse_date_code`, never JS `Date`, so time zones can't shift dates (see `SpreadsheetReader`).
 - `@openrouter/agent` is installed from earlier scaffolding but is **not** part of Phase 1. Don't build features on it, since client data must never leave the machine.
 
@@ -49,7 +49,7 @@ Real client financial files must never be committed, logged or pasted into promp
 
 ## Commands
 
-Package manager is **pnpm** (see `pnpm-lock.yaml`, `pnpm-workspace.yaml`). `nodeLinker: hoisted` in `pnpm-workspace.yaml` is required by Electron Forge; packages with install scripts must be listed under `allowBuilds`.
+Package manager is **pnpm** (see `pnpm-lock.yaml`, `pnpm-workspace.yaml`). `nodeLinker: hoisted` in `pnpm-workspace.yaml` is required by Electron Forge; packages with install scripts must be listed under `allowBuilds`. `overrides: yauzl: 3.3.1` is there because extract-zip's default yauzl 2.x silently stops part-way through unzipping Electron under Node 26, which broke `pnpm package`.
 
 - `pnpm install` — install dependencies
 - `pnpm start` — run the app in dev mode (Vite dev server + Electron, DevTools in a separate window). Set `LEDGER_TRUST_DATA_DIR` to use a scratch data folder instead of `%APPDATA%gentobi`.

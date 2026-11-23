@@ -1,4 +1,7 @@
 import type { ForgeConfig } from '@electron-forge/shared-types';
+import { AutoUnpackNativesPlugin } from '@electron-forge/plugin-auto-unpack-natives';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import { MakerSquirrel } from '@electron-forge/maker-squirrel';
 import { MakerZIP } from '@electron-forge/maker-zip';
 import { MakerDeb } from '@electron-forge/maker-deb';
@@ -22,7 +25,21 @@ const config: ForgeConfig = {
     new MakerRpm({}),
     new MakerDeb({}),
   ],
+  hooks: {
+    // The Vite plugin only packages the bundled .vite output, and
+    // better-sqlite3 is external (native), so copy just what it needs at
+    // runtime: its JS, package.json and Node-API prebuilt binaries.
+    packageAfterCopy: async (_config, buildPath) => {
+      const source = path.join(__dirname, 'node_modules', 'better-sqlite3');
+      const target = path.join(buildPath, 'node_modules', 'better-sqlite3');
+      for (const entry of ['package.json', 'lib', 'prebuilds']) {
+        await fs.cp(path.join(source, entry), path.join(target, entry), { recursive: true });
+      }
+    },
+  },
   plugins: [
+    // Native .node files can't load from inside the asar archive.
+    new AutoUnpackNativesPlugin({}),
     new VitePlugin({
       // `build` can specify multiple entry builds, which can be Main process, Preload scripts, Worker process, etc.
       // If you are familiar with Vite configuration, it will look really familiar.
