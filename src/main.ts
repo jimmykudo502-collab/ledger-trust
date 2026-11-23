@@ -57,7 +57,7 @@ const backend = createBackend(
   new ElectronPdfPrinter(),
 );
 
-registerClientHandlers(ipcMain, backend.clients);
+registerClientHandlers(ipcMain, backend.clients, backend.demo);
 registerChartOfAccountsHandlers(ipcMain, backend.chartOfAccounts);
 registerAccountTemplateHandlers(ipcMain, backend.accountTemplates);
 registerBankAccountHandlers(ipcMain, backend.bankAccounts);

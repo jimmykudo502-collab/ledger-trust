@@ -17,6 +17,9 @@ export function ClientSidebar() {
   const loadError = useClientStore((state) => state.loadError);
   const select = useClientStore((state) => state.select);
   const setShowArchived = useClientStore((state) => state.setShowArchived);
+  const createDemo = useClientStore((state) => state.createDemo);
+  const [demoError, setDemoError] = useState<string | null>(null);
+  const [demoBusy, setDemoBusy] = useState(false);
   const [creating, setCreating] = useState(false);
 
   const shown = visibleClients(clients, showArchived);
@@ -71,6 +74,27 @@ export function ClientSidebar() {
         />
         Show archived ({archivedCount})
       </label>
+
+      <button
+        type="button"
+        className="button small demo-button"
+        disabled={demoBusy}
+        title="Creates a client full of made-up data so you can try every screen"
+        onClick={async () => {
+          setDemoBusy(true);
+          setDemoError(null);
+          try {
+            await createDemo();
+          } catch (caught) {
+            setDemoError(caught instanceof Error ? caught.message : String(caught));
+          } finally {
+            setDemoBusy(false);
+          }
+        }}
+      >
+        {demoBusy ? "Creating demo…" : "Create demo client (made-up data)"}
+      </button>
+      {demoError && <p className="form-error">{demoError}</p>}
 
       {creating && <NewClientDialog onClose={() => setCreating(false)} />}
     </aside>

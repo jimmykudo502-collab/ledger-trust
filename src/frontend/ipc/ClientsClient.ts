@@ -19,6 +19,7 @@ const clientsClient: ClientsApi = {
     }),
   setArchived: (clientId, archived) =>
     invokeResult(APP_CHANNELS.CLIENTS_SET_ARCHIVED, { clientId, archived }),
+  createDemo: () => invokeResult(APP_CHANNELS.CLIENTS_CREATE_DEMO),
 };
 
 /**

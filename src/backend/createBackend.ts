@@ -3,6 +3,7 @@ import path from "node:path";
 import { ClientConnectionPool } from "./db/ClientConnectionPool";
 import { ClientDatabaseFactory } from "./db/ClientDatabaseFactory";
 import { ClientFileStore } from "./db/ClientFileStore";
+import { DemoClientService } from "./demo/DemoClientService";
 import type { TransactionRunner } from "./db/TransactionRunner";
 import { SpreadsheetReader } from "./import/SpreadsheetReader";
 import { SqliteBankAccountRepository } from "./repositories/BankAccountRepository";
@@ -47,6 +48,8 @@ export interface Backend {
   readonly reports: ReportService;
   readonly fiscalYears: FiscalYearService;
   readonly exports: ExportService;
+  readonly journal: JournalService;
+  readonly demo: DemoClientService;
   /** Closes every open client database. */
   dispose(): void;
 }
@@ -113,6 +116,18 @@ export const createBackend = (dataDirectory: string, pdfPrinter: PdfPrinter): Ba
   );
   const imports = new ImportService(new SpreadsheetReader(), bankAccounts, stagingFor, codingRules, transfers);
 
+  const manualEntries = new ManualEntryService(journal);
+  const demo = new DemoClientService({
+    clients,
+    chartOfAccounts,
+    bankAccounts,
+    codingRules,
+    stagingFor,
+    transfers,
+    posting,
+    manualEntries,
+  });
+
   return {
     clients,
     chartOfAccounts,
@@ -124,7 +139,9 @@ export const createBackend = (dataDirectory: string, pdfPrinter: PdfPrinter): Ba
     posting,
     codingRules,
     transfers,
-    manualEntries: new ManualEntryService(journal),
+    manualEntries,
+    demo,
+    journal,
     reports,
     fiscalYears,
     exports: new ExportService(reports, clientRepository, pdfPrinter),

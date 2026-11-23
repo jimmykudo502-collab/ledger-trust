@@ -31,6 +31,8 @@ interface ClientState {
   rename(clientId: string, name: string): Promise<void>;
   /** Changes a client's year-end. Rejects with a user-facing message. */
   setFiscalYearEnd(clientId: string, fiscalYearEnd: FiscalYearEnd): Promise<void>;
+  /** Creates the made-up demo client and opens it. */
+  createDemo(): Promise<ClientSummary>;
   /** Archives or restores a client. Rejects with a user-facing message. */
   setArchived(clientId: string, archived: boolean): Promise<void>;
 }
@@ -69,6 +71,15 @@ export const useClientStore = create<ClientState>()((set) => {
 
     create: async (input) => {
       const client = await window.clients.create(input);
+      set((state) => ({
+        clients: upsertClient(state.clients, client),
+        selectedClientId: client.id,
+      }));
+      return client;
+    },
+
+    createDemo: async () => {
+      const client = await window.clients.createDemo();
       set((state) => ({
         clients: upsertClient(state.clients, client),
         selectedClientId: client.id,

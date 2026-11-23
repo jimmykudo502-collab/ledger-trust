@@ -76,4 +76,6 @@ export interface ClientsApi {
     fiscalYearEnd: FiscalYearEnd,
   ): Promise<ClientSummary>;
   setArchived(clientId: ClientId, archived: boolean): Promise<ClientSummary>;
+  /** Creates a demo client full of made-up data, for trying the app out. */
+  createDemo(): Promise<ClientSummary>;
 }

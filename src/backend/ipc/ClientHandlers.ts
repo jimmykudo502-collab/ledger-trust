@@ -8,6 +8,7 @@ import {
   setFiscalYearEndRequestSchema,
 } from "../../common/clients/clientSchemas";
 import { APP_CHANNELS } from "../../common/ipc/AppChannels";
+import type { DemoClientService } from "../demo/DemoClientService";
 import type { ClientService } from "../services/ClientService";
 import { handleValidated } from "./handleValidated";
 
@@ -15,11 +16,14 @@ import { handleValidated } from "./handleValidated";
  * Registers the IPC handlers for the client list.
  * @param ipcMain Electron's main-process IPC.
  * @param clients The client service the handlers delegate to.
+ * @param demo Builds the made-up demo client.
  */
 export const registerClientHandlers = (
   ipcMain: IpcMain,
   clients: ClientService,
+  demo: DemoClientService,
 ): void => {
+  handleValidated(ipcMain, APP_CHANNELS.CLIENTS_CREATE_DEMO, z.undefined(), () => demo.create());
   handleValidated(ipcMain, APP_CHANNELS.CLIENTS_LIST, z.undefined(), () =>
     clients.list(),
   );
