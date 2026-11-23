@@ -15,7 +15,7 @@ The full requirements are in [docs/phase-1-prd.md](docs/phase-1-prd.md). Read it
 - Spreadsheets: SheetJS to read .xlsx/.ods imports and write Excel reports. PDFs use Electron's built-in print-to-PDF.
 - Validation: `zod`. Shared UI state: `zustand` (see State management).
 - `better-sqlite3` (13.x) ships Node-API prebuilds that load in both Node (Vitest) and Electron, so there is no native rebuild step: Forge's `rebuildConfig.ignoreModules` skips it and `vite.main.config.ts` marks it external. Client databases use SQLite's default rollback journal, not WAL, so a closed client is one file that can be copied as a backup. Known gap: the Forge Vite plugin only packages `.vite/`, so `pnpm package`/`make` builds do not yet include `better-sqlite3`; fix this before distributing (phase 9).
-- SheetJS is not installed yet; it arrives with the import phase.
+- SheetJS (`xlsx`) is installed from the official CDN tarball (`https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz`), not the outdated npm registry copy. Read files with `cellNF: true` and convert date cells via `XLSX.SSF.parse_date_code`, never JS `Date`, so time zones can't shift dates (see `SpreadsheetReader`).
 - `@openrouter/agent` is installed from earlier scaffolding but is **not** part of Phase 1. Don't build features on it, since client data must never leave the machine.
 
 ### Domain rules (non-negotiable)
