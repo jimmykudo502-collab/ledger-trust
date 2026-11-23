@@ -1,5 +1,5 @@
 import type { ImportBatch } from "../../../common/staging/stagingSchemas";
-import { formatLongDate } from "../../../common/dates";
+import { formatLocalDate } from "../../../common/dates";
 import { formatCents } from "../../../common/money";
 
 interface StagedTransactionsProps {
@@ -32,7 +32,7 @@ export function StagedTransactions({ batches, onRemove }: StagedTransactionsProp
               <div>
                 <strong>{batch.sourceName ?? "Pasted rows"}</strong>
                 <span className="muted">
-                  {" · "}imported {formatLongDate(batch.createdAt.slice(0, 10))} · {batch.rows.length} row
+                  {" · "}imported {formatLocalDate(batch.createdAt)} · {batch.rows.length} row
                   {batch.rows.length === 1 ? "" : "s"}
                   {posted > 0 && ` · ${posted} posted`}
                 </span>

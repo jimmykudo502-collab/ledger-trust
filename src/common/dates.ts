@@ -46,3 +46,14 @@ export const formatLongDate = (isoDate: string): string => {
   const [year, month, day] = isoDate.split("-").map(Number);
   return `${MONTH_NAMES[month - 1]} ${day}, ${year}`;
 };
+
+/**
+ * Formats a stored UTC timestamp (e.g. a `created_at` value) as a date in
+ * the computer's own time zone, e.g. "November 22, 2026".
+ * @param timestamp An ISO-8601 timestamp.
+ */
+export const formatLocalDate = (timestamp: string): string => {
+  const date = new Date(timestamp);
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return formatLongDate(`${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`);
+};

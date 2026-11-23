@@ -32,7 +32,7 @@ The full requirements are in [docs/phase-1-prd.md](docs/phase-1-prd.md). Read it
 
 1. Project setup and database (done)
 2. Clients and chart of accounts (done)
-3. Bank account tabs and import
+3. Bank account tabs and import (done)
 4. Coding grid and posting
 5. Transfer matching and control account review
 6. Manual journal entries
@@ -45,7 +45,7 @@ Treat each step as a phase of a multi-phase plan (see Workflow). Out of scope fo
 
 ### Privacy
 
-Real client financial files must never be committed, logged or pasted into prompts or tests. Use made-up data for fixtures and tests. `.env` is git-ignored; never commit it or print its contents.
+Real client financial files must never be committed, logged or pasted into prompts or tests. Use made-up data for fixtures and tests. Made-up statements for manual testing live in `docs/sample-imports/` (covered by `sampleImports.test.ts`). `.env` is git-ignored; never commit it or print its contents.
 
 ## Commands
 
@@ -78,6 +78,8 @@ src/
     db/              ClientFileStore (one <uuid>.sqlite per client), ClientConnectionPool,
                      ClientDatabaseFactory, MigrationRunner, clientMigrations.ts
     templates/       Master chart of accounts template store (JSON file)
+    import/          SpreadsheetReader (SheetJS), columnDetection, rowParsing,
+                     importDates, duplicates: pure import logic used by ImportService
     ipc/             Thin handlers registered via handleValidated()
     testing/         Test helpers, e.g. TempClientWorkspace
   frontend/          Renderer side

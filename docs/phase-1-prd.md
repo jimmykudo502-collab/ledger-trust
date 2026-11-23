@@ -52,9 +52,9 @@ A local desktop app (Electron.js) for a bookkeeper who keeps the books of other 
 ### 4.4 Import
 
 - **FR-11** Accept .xlsx and .ods files, and pasted text.
-- **FR-12** Auto-detect the date, description, and amount columns. Handle both a single signed amount column and separate debit/credit columns. The user can confirm or adjust the mapping.
+- **FR-12** Auto-detect the date, description, and amount columns. Handle both a single signed amount column and separate debit/credit columns. The user can confirm or adjust the mapping. The heading row and date format (month-first, day-first or year-first) are detected too and can be changed; for credit cards a positive amount defaults to a charge (money out).
 - **FR-13** Imported rows go to a staging area. Nothing reaches the ledger until posted.
-- **FR-14** Warn when an imported row matches an existing one (same account, date, amount, and description), so overlapping statements do not double-post.
+- **FR-14** Warn when an imported row matches an existing one (same account, date, amount, and description), so overlapping statements do not double-post. Matching ignores case and spacing in the description and is one-to-one, so genuine repeats within a statement still come through; flagged rows start unticked and can be included.
 
 ### 4.5 Coding
 
@@ -131,6 +131,7 @@ Core entities: Client, Account, BankAccount (linked to an Account), ImportBatch,
 - Storage: SQLite, one file per client.
 - Currency: one currency per client for now; multiple currencies come later.
 - Duplicate detection and remembered coding rules: included in Phase 1.
+- Imports: rows that can't be read (bad date or amount) are shown with the reason and never staged. An import can be removed from staging until any of its rows is posted. Bank tabs post to an asset account, credit card tabs to a liability account.
 - Bank reconciliation: after Phase 1, once transactions are being booked.
 - Unlocking: a locked year can be unlocked.
 - Transfer matching window: about 3 to 4 days.

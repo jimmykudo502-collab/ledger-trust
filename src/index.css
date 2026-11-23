@@ -561,7 +561,8 @@ tr.excluded td {
   text-decoration-color: var(--border);
 }
 
-tr.excluded td:first-child {
+tr.excluded td:first-child,
+tr.excluded td:last-child {
   text-decoration: none;
 }
 
