@@ -10,6 +10,7 @@ import { registerClientHandlers } from "./backend/ipc/ClientHandlers";
 import { registerCodingRuleHandlers } from "./backend/ipc/CodingRuleHandlers";
 import { registerImportHandlers } from "./backend/ipc/ImportHandlers";
 import { registerStagingHandlers } from "./backend/ipc/StagingHandlers";
+import { registerTransferHandlers } from "./backend/ipc/TransferHandlers";
 
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
@@ -57,6 +58,7 @@ registerBankAccountHandlers(ipcMain, backend.bankAccounts);
 registerImportHandlers(ipcMain, backend.imports);
 registerStagingHandlers(ipcMain, backend.staging, backend.coding, backend.posting);
 registerCodingRuleHandlers(ipcMain, backend.codingRules);
+registerTransferHandlers(ipcMain, backend.transfers);
 
 app.on("will-quit", () => {
   backend.dispose();
