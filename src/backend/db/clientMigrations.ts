@@ -168,8 +168,28 @@ const fiscalYearEndDate: Migration = {
   `,
 };
 
+/**
+ * Confirmed transfers between a client's own accounts (FR-19): each pairs
+ * two staged rows from different tabs, and a row is in at most one pair.
+ * Removing an import removes its rows' pairs.
+ */
+const transferMatches: Migration = {
+  version: 3,
+  name: "transfer matches",
+  sql: `
+    CREATE TABLE transfer_matches (
+      id INTEGER PRIMARY KEY,
+      first_row_id INTEGER NOT NULL UNIQUE REFERENCES staged_transactions (id) ON DELETE CASCADE,
+      second_row_id INTEGER NOT NULL UNIQUE REFERENCES staged_transactions (id) ON DELETE CASCADE,
+      created_at TEXT NOT NULL DEFAULT ${NOW},
+      CHECK (first_row_id <> second_row_id)
+    ) STRICT;
+  `,
+};
+
 /** Every client database migration, oldest first. */
 export const CLIENT_MIGRATIONS: readonly Migration[] = [
   initialSchema,
   fiscalYearEndDate,
+  transferMatches,
 ];

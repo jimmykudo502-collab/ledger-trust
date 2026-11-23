@@ -5,6 +5,7 @@ import {
   SYSTEM_ACCOUNTS,
   type Account,
   type AccountInput,
+  type SystemAccountKey,
 } from "../../common/accounts/accountSchemas";
 import { clientIdSchema } from "../../common/clients/clientSchemas";
 import { UserFacingError } from "../errors";
@@ -52,6 +53,16 @@ export class ChartOfAccountsService implements ClientInitializer {
       }
       accounts.insert(system);
     }
+  }
+
+  /**
+   * The account playing a system role, creating it first if it is missing.
+   * @param clientId The client.
+   * @param key The role, e.g. "bank_transfer_control".
+   */
+  public systemAccount(clientId: string, key: SystemAccountKey): Account {
+    this.ensureSystemAccounts(clientId);
+    return this.repo(clientId).findBySystemKey(key);
   }
 
   /**
