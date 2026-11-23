@@ -69,17 +69,21 @@ export const parseImportDate = (
     return toIso(fullYear(yearText), month, Number(dayText));
   }
 
-  if (!tokens.every((token) => /^\d{1,4}$/.test(token))) {
+  // All-number dates need one separator used consistently (01/05/2026,
+  // 2026.01.05), so amounts such as "1,001.00" are never read as dates.
+  const numeric = /^(\d{1,4})([/.-])(\d{1,2})\2(\d{2}|\d{4})$/.exec(text);
+  if (!numeric) {
     return null;
   }
-  if (tokens[0].length === 4) {
-    return toIso(Number(tokens[0]), Number(tokens[1]), Number(tokens[2]));
+  const [, firstText, , secondText, lastText] = numeric;
+  if (firstText.length === 4) {
+    return toIso(Number(firstText), Number(secondText), Number(lastText));
   }
-  if (tokens[2].length !== 4 && tokens[2].length !== 2) {
+  if (firstText.length > 2) {
     return null;
   }
-  const [first, second] = [Number(tokens[0]), Number(tokens[1])];
-  const year = fullYear(tokens[2]);
+  const [first, second] = [Number(firstText), Number(secondText)];
+  const year = fullYear(lastText);
   return order === "DMY" ? toIso(year, second, first) : toIso(year, first, second);
 };
 

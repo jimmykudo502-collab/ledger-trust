@@ -58,7 +58,7 @@ describe("parseImportDate", () => {
         }
       }),
     );
-    for (const bad of ["", "Total", "13/13/2026", "02/30/2026", "1234.56", "Jan 2026"]) {
+    for (const bad of ["", "Total", "13/13/2026", "02/30/2026", "1234.56", "Jan 2026", "1,001.00", "12,345.67", "1/05-2026"]) {
       expect(parseImportDate(bad, "MDY"), bad).toBeNull();
     }
   });

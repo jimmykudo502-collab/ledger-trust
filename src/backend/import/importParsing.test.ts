@@ -146,6 +146,18 @@ describe("import parsing", () => {
     );
   });
 
+  it("never mistakes text amounts with thousands separators for dates", () => {
+    // Regression: "1,001.00" used to read as 1/001/00, hiding a deposits column.
+    const rows: Cell[][] = [
+      ["2020-01-01", "COFFEE SHOP #12", null, "1,001.00"],
+      ["2020-01-01", "COFFEE SHOP #12", "0.01", null],
+      ["2020-01-01", "COFFEE SHOP #12", null, "0.01"],
+    ];
+    const { mapping } = detectMapping(rows, "bank");
+    expect(mapping.amount).toEqual({ kind: "split", moneyOutColumn: 2, moneyInColumn: 3 });
+    expect(parseRows(rows, mapping).map((row) => row.amountCents)).toEqual([100100, -1, 1]);
+  });
+
   it("reports rows it can't read, and skips blank and title rows", () => {
     const rows: Cell[][] = [
       ["Made-up Bank statement"],
