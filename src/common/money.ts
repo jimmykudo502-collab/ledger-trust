@@ -78,3 +78,19 @@ export const formatCents = (cents: number): string => {
   const fraction = (absolute % 100).toString().padStart(2, "0");
   return `${sign}${whole}.${fraction}`;
 };
+
+/**
+ * Formats a debit-positive balance with its side, e.g. 1234 → "12.34 Dr",
+ * -1234 → "12.34 Cr", 0 → "0.00".
+ * @param cents Debit-positive cents.
+ */
+export const formatDrCr = (cents: number): string =>
+  cents === 0 ? "0.00" : `${formatCents(Math.abs(cents))} ${cents > 0 ? "Dr" : "Cr"}`;
+
+/**
+ * Formats an amount the way financial statements do: negatives in
+ * brackets, e.g. -1234 → "(12.34)".
+ * @param cents The amount in cents.
+ */
+export const formatStatement = (cents: number): string =>
+  cents < 0 ? `(${formatCents(-cents)})` : formatCents(cents);

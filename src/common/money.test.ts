@@ -1,7 +1,7 @@
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
-import { centsFromNumber, formatCents, parseMoney } from "./money";
+import { centsFromNumber, formatCents, formatDrCr, formatStatement, parseMoney } from "./money";
 
 const cents = fc.integer({ min: -(10 ** 13), max: 10 ** 13 });
 
@@ -52,5 +52,17 @@ describe("money", () => {
     expect(parseMoney("1,000")).toBe(100000);
     expect(formatCents(5)).toBe("0.05");
     expect(formatCents(-100)).toBe("-1.00");
+  });
+
+  it("shows balances with their side and statement negatives in brackets", () => {
+    fc.assert(
+      fc.property(cents, (value) => {
+        const drCr = formatDrCr(value);
+        if (value === 0) expect(drCr).toBe("0.00");
+        else expect(drCr).toBe(`${formatCents(Math.abs(value))} ${value > 0 ? "Dr" : "Cr"}`);
+        expect(formatStatement(value).startsWith("(")).toBe(value < 0);
+      }),
+    );
+    expect(formatStatement(-123456)).toBe("(1,234.56)");
   });
 });

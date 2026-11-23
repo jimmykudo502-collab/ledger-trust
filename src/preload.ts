@@ -5,6 +5,7 @@ import { exposeClientsClient } from "./frontend/ipc/ClientsClient";
 import { exposeCodingRulesClient } from "./frontend/ipc/CodingRulesClient";
 import { exposeImportsClient } from "./frontend/ipc/ImportsClient";
 import { exposeJournalEntriesClient } from "./frontend/ipc/JournalEntriesClient";
+import { exposeReportsClient } from "./frontend/ipc/ReportsClient";
 import { exposeStagingClient } from "./frontend/ipc/StagingClient";
 import { exposeTransfersClient } from "./frontend/ipc/TransfersClient";
 
@@ -17,3 +18,4 @@ exposeStagingClient();
 exposeCodingRulesClient();
 exposeTransfersClient();
 exposeJournalEntriesClient();
+exposeReportsClient();

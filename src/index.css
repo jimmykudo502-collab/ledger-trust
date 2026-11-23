@@ -794,3 +794,112 @@ tr.excluded td:last-child {
 .date-field {
   flex: 0 0 10rem;
 }
+
+/* Reports */
+
+.report-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.range-controls {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.inline-field {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.range-controls .inline-field {
+  margin-bottom: 0;
+}
+
+.inline-field > span {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.report-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.report-heading h2 {
+  font-size: 1.2rem;
+  margin-top: 0.4rem;
+}
+
+.report-heading h3 {
+  font-size: 1rem;
+  margin-top: 0.15rem;
+}
+
+.report-table .money,
+.statement-table .money {
+  min-width: 7.5rem;
+}
+
+tr.clickable {
+  cursor: pointer;
+}
+
+tr.clickable:hover .link-like {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.subtle-row td {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.ledger-account {
+  margin-bottom: 1.25rem;
+}
+
+.ledger-account h4 {
+  margin: 0.25rem 0 0.4rem;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.statement-table {
+  max-width: 720px;
+}
+
+.statement-table .section-row td {
+  font-weight: 700;
+  padding-top: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.statement-table td {
+  border-bottom: 0;
+}
+
+.statement-table .subtotal-row td {
+  font-weight: 600;
+  border-top: 1px solid var(--border);
+}
+
+.statement-table .grand-total-row td {
+  font-weight: 700;
+  border-top: 2px solid var(--text);
+  border-bottom: 3px double var(--text);
+  padding-top: 0.6rem;
+}

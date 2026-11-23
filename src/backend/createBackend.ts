@@ -10,6 +10,7 @@ import { SqliteCodingRuleRepository } from "./repositories/CodingRuleRepository"
 import { SqliteJournalRepository } from "./repositories/JournalRepository";
 import { SqliteAccountRepository } from "./repositories/SqliteAccountRepository";
 import { SqliteClientRepository } from "./repositories/SqliteClientRepository";
+import { SqliteReportRepository } from "./repositories/ReportRepository";
 import { SqliteStagingRepository } from "./repositories/StagingRepository";
 import { SqliteTransferMatchRepository } from "./repositories/TransferMatchRepository";
 import { AccountTemplateService } from "./services/AccountTemplateService";
@@ -22,6 +23,7 @@ import { CodingService } from "./services/CodingService";
 import { ImportService } from "./services/ImportService";
 import { JournalService } from "./services/JournalService";
 import { ManualEntryService } from "./services/ManualEntryService";
+import { ReportService } from "./services/ReportService";
 import { StagingService } from "./services/StagingService";
 import { TransferService } from "./services/TransferService";
 import { JsonFileTemplateStore } from "./templates/TemplateStore";
@@ -39,6 +41,7 @@ export interface Backend {
   readonly codingRules: CodingRuleService;
   readonly transfers: TransferService;
   readonly manualEntries: ManualEntryService;
+  readonly reports: ReportService;
   /** Closes every open client database. */
   dispose(): void;
 }
@@ -106,6 +109,7 @@ export const createBackend = (dataDirectory: string): Backend => {
     codingRules,
     transfers,
     manualEntries: new ManualEntryService(journal),
+    reports: new ReportService((clientId) => new SqliteReportRepository(pool.get(clientId))),
     dispose: () => pool.closeAll(),
   };
 };
