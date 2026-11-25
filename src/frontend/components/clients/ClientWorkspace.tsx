@@ -5,6 +5,7 @@ import type { ClientSummary } from "../../../common/clients/clientSchemas";
 import { ChartOfAccounts } from "../accounts/ChartOfAccounts";
 import { AddBankAccountDialog } from "../bankAccounts/AddBankAccountDialog";
 import { BankAccountTab } from "../bankAccounts/BankAccountTab";
+import { FsMaps } from "../fsMaps/FsMaps";
 import { CodingRules } from "../coding/CodingRules";
 import { JournalEntries } from "../journal/JournalEntries";
 import { Reports } from "../reports/Reports";
@@ -17,7 +18,7 @@ interface ClientWorkspaceProps {
 }
 
 /** Which tab is showing: chart of accounts, coding rules, or a bank account's id. */
-type TabKey = "accounts" | "rules" | "transfers" | "entries" | "reports" | "years" | number;
+type TabKey = "accounts" | "fsMaps" | "rules" | "transfers" | "entries" | "reports" | "years" | number;
 
 /**
  * The open client: header, then a tab for the chart of accounts and one tab
@@ -55,6 +56,15 @@ export function ClientWorkspace({ client }: ClientWorkspaceProps) {
           onClick={() => setTab("accounts")}
         >
           Chart of accounts
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "fsMaps"}
+          className={`tab${tab === "fsMaps" ? " active" : ""}`}
+          onClick={() => setTab("fsMaps")}
+        >
+          FS maps
         </button>
         <button
           type="button"
@@ -143,6 +153,8 @@ export function ClientWorkspace({ client }: ClientWorkspaceProps) {
         <JournalEntries clientId={client.id} />
       ) : tab === "transfers" ? (
         <TransferReview clientId={client.id} />
+      ) : tab === "fsMaps" ? (
+        <FsMaps clientId={client.id} />
       ) : tab === "rules" ? (
         <CodingRules clientId={client.id} bankAccounts={bankAccounts} />
       ) : (
