@@ -95,9 +95,16 @@ A local desktop app (Electron.js) for a bookkeeper who keeps the books of other 
 
 - **FR-32** Every report exports to PDF and to Excel, ready to send to a client. Each export shows the client name, the report title, and the period.
 
+### 4.12 Financial statement maps (Phase 2)
+
+- **FR-33** Each client has two FS maps, internal and external. A map is a list of FS lines, each with a map number (e.g. 1000 or 100), a name as printed on the statement, and a statement section: current or non-current assets, current or non-current liabilities, equity, revenue, cost of sales, operating expenses, other income, other expenses, or income taxes. The same map number can be used on both maps, but only once per map.
+- **FR-34** Every account can be mapped to one line on each map. Balance sheet accounts (asset, liability, equity) can only go on balance sheet lines, and revenue and expense accounts only on income statement lines, so mapped statements always balance.
+- **FR-35** A map can start from a standard set of starter lines (detailed for internal, condensed for external). The master template carries both maps' lines and each account's map numbers, so importing it sets up a new client's maps too. Existing lines and mappings are never overwritten.
+- **FR-36** The balance sheet and income statement can be shown and exported by account (as in Phase 1), by internal FS lines, or by external FS lines, with an option to list the accounts under each line. All three layouts come from the same posted journal lines (FR-31), so their totals agree. Accounts without a line on the chosen map are shown under "Accounts not mapped" with a warning, never left out. The mapped income statement shows gross profit, operating income and income before taxes when those sections are used.
+
 ## 5. Data model (high level)
 
-Core entities: Client, Account, BankAccount (linked to an Account), ImportBatch, StagedTransaction, JournalEntry, JournalLine, and FiscalYear/Period.
+Core entities: Client, Account, BankAccount (linked to an Account), ImportBatch, StagedTransaction, JournalEntry, JournalLine, and FiscalYear/Period. Phase 2 adds FsLine (per map) and each account's FS line on each map.
 
 **Guiding principle:** the journal is the single source of truth. The general ledger, trial balance, and financial statements are views computed from it, never stored separately.
 
@@ -153,6 +160,7 @@ Core entities: Client, Account, BankAccount (linked to an Account), ImportBatch,
 - Reports: the balance sheet shows unclosed revenue less expenses as "current earnings", so it always balances. Year-end closing entries are excluded from period figures by default so a full-year income statement still shows the year's activity.
 - Exports: PDF via Electron print-to-PDF (Letter size) and Excel via SheetJS, with amounts as numbers; every export shows client name, report title and period.
 - Testing: a "Create demo client (made-up data)" button and an end-to-end test exercise the whole workflow without real client files.
+- FS maps (Phase 2): mappings can change at any time, even for locked years, because they only change how statements are laid out, never the journal. Exports of the internal layout are titled e.g. "Balance Sheet (internal)"; the external and by-account layouts print the plain title, ready to send.
 
 ## 10. Suggested build order
 

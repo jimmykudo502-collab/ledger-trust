@@ -6,7 +6,9 @@ Guidance for Claude Code when working in this repository.
 
 **Ledger Trust** is a local, offline desktop bookkeeping app for a single bookkeeper who keeps the books for other people's businesses (clients). The core flow: open a client, import their bank or credit card write-up (.xlsx, .ods or pasted text), code each transaction to an account, post it, and immediately see an updated general ledger, trial balance, balance sheet and income statement, all exportable to PDF and Excel for any date range.
 
-The full requirements are in [docs/phase-1-prd.md](docs/phase-1-prd.md). Read it before planning any feature and reference requirement IDs (`FR-n`) in plans and commit messages.
+Phase 2 adds internal and external financial statement (FS) maps: each account maps to one numbered FS line per map, and the balance sheet and income statement can be laid out by account, internal FS or external FS from the same journal data.
+
+The full requirements are in [docs/phase-1-prd.md](docs/phase-1-prd.md) (Phase 2 FS maps are section 4.12, FR-33 to FR-36). Read it before planning any feature and reference requirement IDs (`FR-n`) in plans and commit messages.
 
 ### Stack
 
@@ -40,6 +42,8 @@ The full requirements are in [docs/phase-1-prd.md](docs/phase-1-prd.md). Read it
 8. Period lock, year-end close and roll-forward (done)
 9. PDF and Excel export (done)
 10. Testing with made-up client data before any real files are used (done: demo client + `src/backend/endToEnd.test.ts`)
+
+Phase 2 so far: FS maps (FR-33 to FR-36, done).
 
 Treat each step as a phase of a multi-phase plan (see Workflow). Out of scope for Phase 1: A/R and A/P aging, invoicing, payroll, sales tax, inventory, multi-user, cloud sync, bank feeds, bank reconciliation and multi-currency.
 
@@ -80,11 +84,13 @@ src/
     repositories/    Storage interfaces with SQLite and in-memory implementations
     db/              ClientFileStore (one <uuid>.sqlite per client), ClientConnectionPool,
                      ClientDatabaseFactory, MigrationRunner, clientMigrations.ts
-    templates/       Master chart of accounts template store (JSON file)
+    templates/       Master chart of accounts template store (JSON file; v2 also holds FS map lines)
+    fsMaps/          Starter FS lines for the internal and external maps (FR-35)
     import/          SpreadsheetReader (SheetJS), columnDetection, rowParsing,
                      importDates, duplicates: pure import logic used by ImportService
     posting/         bankEntryLines (FR-16), pickRule (FR-18), findTransferPairs (FR-19)
-    reports/         Pure report builders over per-account balances (FR-29 to FR-31)
+    reports/         Pure report builders over per-account balances (FR-29 to FR-31) and
+                     mappedStatements (statements rolled up by FS map, FR-36)
     exports/         ReportDocument layouts, HTML/Excel renderers, ElectronPdfPrinter (FR-32)
     demo/            Made-up demo client data and DemoClientService (step 10)
     ipc/             Thin handlers registered via handleValidated()
@@ -106,6 +112,7 @@ Vite configs: `vite.main.config.ts`, `vite.preload.config.ts`, `vite.renderer.co
 - Every journal entry goes through `JournalService.post`, which checks balance, one-sided lines and real accounts (SQLite can't check a multi-row invariant at commit). Never insert journal rows any other way.
 - Work that spans repositories (e.g. a journal entry plus its staged row's status) runs inside the injected `TransactionRunner`, so it all commits or all rolls back.
 - `FiscalYearService` is the journal's `PeriodGuard`: nothing dated in a locked fiscal year can be posted, replaced or deleted. Only the year-end close/reopen bypass it (`postClosingEntry`, `deleteClosingEntry`).
+- FS maps live in `fs_lines` (one row per line, `map` is internal/external) and `account_fs_lines` (one row per account per map; a composite foreign key keeps an account's internal line on the internal map). `FsMapService` enforces that balance sheet accounts only go on balance sheet lines. Mapped statements (`MappedStatementService`) reuse `ReportRepository.balances`; the screen and exports share the row order in `src/common/reports/mappedStatementLayout.ts`.
 - Reports never store anything: every report comes from `ReportRepository.balances` (opening before the range, period debits/credits, closing) and `ledgerLines`. Year-end closing entries dated inside the range are left out of period figures unless `includeClosingEntries` is set; the income statement always leaves them out.
 
 ### Adding a new IPC feature
