@@ -48,6 +48,8 @@ export const APP_CHANNELS = {
   REPORTS_GENERAL_LEDGER: "app:reportsGeneralLedger",
   REPORTS_BALANCE_SHEET: "app:reportsBalanceSheet",
   REPORTS_INCOME_STATEMENT: "app:reportsIncomeStatement",
+  MAPPED_BALANCE_SHEET: "app:mappedBalanceSheet",
+  MAPPED_INCOME_STATEMENT: "app:mappedIncomeStatement",
   YEARS_OVERVIEW: "app:yearsOverview",
   YEARS_LOCK: "app:yearsLock",
   YEARS_UNLOCK: "app:yearsUnlock",

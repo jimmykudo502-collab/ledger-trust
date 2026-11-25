@@ -29,6 +29,7 @@ import { JournalService } from "./services/JournalService";
 import { FsMapService } from "./services/FsMapService";
 import { FiscalYearService } from "./services/FiscalYearService";
 import { ManualEntryService } from "./services/ManualEntryService";
+import { MappedStatementService } from "./services/MappedStatementService";
 import { ReportService } from "./services/ReportService";
 import { StagingService } from "./services/StagingService";
 import { TransferService } from "./services/TransferService";
@@ -49,6 +50,7 @@ export interface Backend {
   readonly transfers: TransferService;
   readonly manualEntries: ManualEntryService;
   readonly reports: ReportService;
+  readonly mappedStatements: MappedStatementService;
   readonly fiscalYears: FiscalYearService;
   readonly exports: ExportService;
   readonly journal: JournalService;
@@ -95,10 +97,12 @@ export const createBackend = (dataDirectory: string, pdfPrinter: PdfPrinter): Ba
   const staging = new StagingService(stagingFor, bankAccounts);
   const inTransaction: TransactionRunner = (clientId, work) => pool.get(clientId).transaction(work)();
   const journal = new JournalService((clientId) => new SqliteJournalRepository(pool.get(clientId)), chartOfAccounts);
-  const fsMaps = new FsMapService((clientId) => new SqliteFsMapRepository(pool.get(clientId)), chartOfAccounts, inTransaction);
+  const fsMapsFor = (clientId: string) => new SqliteFsMapRepository(pool.get(clientId));
+  const fsMaps = new FsMapService(fsMapsFor, chartOfAccounts, inTransaction);
   const coding = new CodingService(stagingFor, bankAccounts, chartOfAccounts);
   const reportsFor = (clientId: string) => new SqliteReportRepository(pool.get(clientId));
   const reports = new ReportService(reportsFor);
+  const mappedStatements = new MappedStatementService(reportsFor, fsMapsFor);
   const fiscalYears = new FiscalYearService(
     (clientId) => new SqliteFiscalYearRepository(pool.get(clientId)),
     reportsFor,
@@ -148,6 +152,7 @@ export const createBackend = (dataDirectory: string, pdfPrinter: PdfPrinter): Ba
     demo,
     journal,
     reports,
+    mappedStatements,
     fiscalYears,
     exports: new ExportService(reports, clientRepository, pdfPrinter),
     dispose: () => pool.closeAll(),

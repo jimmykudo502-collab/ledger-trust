@@ -13,6 +13,7 @@ import { registerExportHandlers } from "./backend/ipc/ExportHandlers";
 import { registerCodingRuleHandlers } from "./backend/ipc/CodingRuleHandlers";
 import { registerImportHandlers } from "./backend/ipc/ImportHandlers";
 import { registerJournalEntryHandlers } from "./backend/ipc/JournalEntryHandlers";
+import { registerMappedStatementHandlers } from "./backend/ipc/MappedStatementHandlers";
 import { registerReportHandlers } from "./backend/ipc/ReportHandlers";
 import { registerStagingHandlers } from "./backend/ipc/StagingHandlers";
 import { registerTransferHandlers } from "./backend/ipc/TransferHandlers";
@@ -69,6 +70,7 @@ registerCodingRuleHandlers(ipcMain, backend.codingRules);
 registerTransferHandlers(ipcMain, backend.transfers);
 registerJournalEntryHandlers(ipcMain, backend.manualEntries);
 registerReportHandlers(ipcMain, backend.reports);
+registerMappedStatementHandlers(ipcMain, backend.mappedStatements);
 registerYearEndHandlers(ipcMain, backend.fiscalYears);
 registerExportHandlers(ipcMain, backend.exports);
 
