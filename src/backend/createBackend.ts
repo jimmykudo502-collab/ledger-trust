@@ -11,6 +11,7 @@ import { SqliteCodingRuleRepository } from "./repositories/CodingRuleRepository"
 import { SqliteJournalRepository } from "./repositories/JournalRepository";
 import { SqliteAccountRepository } from "./repositories/SqliteAccountRepository";
 import { SqliteClientRepository } from "./repositories/SqliteClientRepository";
+import { SqliteFsMapRepository } from "./repositories/FsMapRepository";
 import { SqliteFiscalYearRepository } from "./repositories/FiscalYearRepository";
 import { SqliteReportRepository } from "./repositories/ReportRepository";
 import { SqliteStagingRepository } from "./repositories/StagingRepository";
@@ -25,6 +26,7 @@ import { CodingRuleService } from "./services/CodingRuleService";
 import { CodingService } from "./services/CodingService";
 import { ImportService } from "./services/ImportService";
 import { JournalService } from "./services/JournalService";
+import { FsMapService } from "./services/FsMapService";
 import { FiscalYearService } from "./services/FiscalYearService";
 import { ManualEntryService } from "./services/ManualEntryService";
 import { ReportService } from "./services/ReportService";
@@ -36,6 +38,7 @@ import { JsonFileTemplateStore } from "./templates/TemplateStore";
 export interface Backend {
   readonly clients: ClientService;
   readonly chartOfAccounts: ChartOfAccountsService;
+  readonly fsMaps: FsMapService;
   readonly accountTemplates: AccountTemplateService;
   readonly bankAccounts: BankAccountService;
   readonly imports: ImportService;
@@ -92,6 +95,7 @@ export const createBackend = (dataDirectory: string, pdfPrinter: PdfPrinter): Ba
   const staging = new StagingService(stagingFor, bankAccounts);
   const inTransaction: TransactionRunner = (clientId, work) => pool.get(clientId).transaction(work)();
   const journal = new JournalService((clientId) => new SqliteJournalRepository(pool.get(clientId)), chartOfAccounts);
+  const fsMaps = new FsMapService((clientId) => new SqliteFsMapRepository(pool.get(clientId)), chartOfAccounts, inTransaction);
   const coding = new CodingService(stagingFor, bankAccounts, chartOfAccounts);
   const reportsFor = (clientId: string) => new SqliteReportRepository(pool.get(clientId));
   const reports = new ReportService(reportsFor);
@@ -131,6 +135,7 @@ export const createBackend = (dataDirectory: string, pdfPrinter: PdfPrinter): Ba
   return {
     clients,
     chartOfAccounts,
+    fsMaps,
     accountTemplates,
     bankAccounts,
     imports,

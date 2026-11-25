@@ -8,6 +8,7 @@ import { registerBankAccountHandlers } from "./backend/ipc/BankAccountHandlers";
 import { registerChartOfAccountsHandlers } from "./backend/ipc/ChartOfAccountsHandlers";
 import { ElectronPdfPrinter } from "./backend/exports/ElectronPdfPrinter";
 import { registerClientHandlers } from "./backend/ipc/ClientHandlers";
+import { registerFsMapHandlers } from "./backend/ipc/FsMapHandlers";
 import { registerExportHandlers } from "./backend/ipc/ExportHandlers";
 import { registerCodingRuleHandlers } from "./backend/ipc/CodingRuleHandlers";
 import { registerImportHandlers } from "./backend/ipc/ImportHandlers";
@@ -59,6 +60,7 @@ const backend = createBackend(
 
 registerClientHandlers(ipcMain, backend.clients, backend.demo);
 registerChartOfAccountsHandlers(ipcMain, backend.chartOfAccounts);
+registerFsMapHandlers(ipcMain, backend.fsMaps);
 registerAccountTemplateHandlers(ipcMain, backend.accountTemplates);
 registerBankAccountHandlers(ipcMain, backend.bankAccounts);
 registerImportHandlers(ipcMain, backend.imports);

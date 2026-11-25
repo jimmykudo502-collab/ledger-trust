@@ -205,10 +205,46 @@ const yearEnd: Migration = {
   `,
 };
 
+/**
+ * Financial statement maps (FR-33, FR-34): numbered FS lines on an internal
+ * and an external map, and each account's line on each map. The composite
+ * foreign key makes sure an account's internal line really is on the
+ * internal map. Deleting a line or an account removes its assignments.
+ */
+const fsMaps: Migration = {
+  version: 5,
+  name: "financial statement maps",
+  sql: `
+    CREATE TABLE fs_lines (
+      id INTEGER PRIMARY KEY,
+      map TEXT NOT NULL CHECK (map IN ('internal', 'external')),
+      code TEXT NOT NULL ${notBlank("code")},
+      name TEXT NOT NULL ${notBlank("name")},
+      section TEXT NOT NULL CHECK (section IN (
+        'current_assets', 'non_current_assets', 'current_liabilities', 'non_current_liabilities', 'equity',
+        'revenue', 'cost_of_sales', 'operating_expenses', 'other_income', 'other_expenses', 'income_taxes')),
+      created_at TEXT NOT NULL DEFAULT ${NOW},
+      UNIQUE (map, code),
+      UNIQUE (id, map)
+    ) STRICT;
+
+    CREATE TABLE account_fs_lines (
+      account_id INTEGER NOT NULL REFERENCES accounts (id) ON DELETE CASCADE,
+      map TEXT NOT NULL CHECK (map IN ('internal', 'external')),
+      fs_line_id INTEGER NOT NULL,
+      PRIMARY KEY (account_id, map),
+      FOREIGN KEY (fs_line_id, map) REFERENCES fs_lines (id, map) ON DELETE CASCADE
+    ) STRICT;
+
+    CREATE INDEX account_fs_lines_by_line ON account_fs_lines (fs_line_id);
+  `,
+};
+
 /** Every client database migration, oldest first. */
 export const CLIENT_MIGRATIONS: readonly Migration[] = [
   initialSchema,
   fiscalYearEndDate,
   transferMatches,
   yearEnd,
+  fsMaps,
 ];
