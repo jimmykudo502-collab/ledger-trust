@@ -59,7 +59,7 @@ Package manager is **pnpm** (see `pnpm-lock.yaml`, `pnpm-workspace.yaml`). `node
 - `pnpm package` / `pnpm make` — build distributables into `out/`
 - `pnpm run install-app` — build and install the app for the current Windows user (`%LOCALAPPDATA%\Programs\Ledger Trust`) with "Ledger Trust" Desktop and Start menu shortcuts (`scripts/install-local.ps1`). Re-run after changes to update the installed copy. The packaged exe is named Ledger Trust, but package.json's `name` stays `agentobi` so client data stays in `%APPDATA%gentobi`; don't rename it without migrating that folder.
 
-Vitest is pinned to 3.x because the app uses Vite 5 (Vitest 4+ requires Vite 6+). Test config lives in `vitest.config.mts`.
+Vitest is pinned to 3.x because the app uses Vite 5 (Vitest 4+ requires Vite 6+). Test config lives in `vitest.config.mts`, which sets a 30s per-test timeout because property tests that create many client databases can pass 5s inside OneDrive.
 
 The repo lives inside OneDrive, which sometimes locks files in `node_modules` mid-run; a test file then fails to load with "resource busy or locked". That is not a code failure: rerun. Always gate commits on the exit codes of `pnpm test && pnpm lint && pnpm exec tsc --noEmit`, never on grepping their output.
 
