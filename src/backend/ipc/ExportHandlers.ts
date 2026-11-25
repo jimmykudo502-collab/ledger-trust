@@ -23,8 +23,8 @@ export const registerExportHandlers = (ipcMain: IpcMain, exports: ExportService)
   // Only files this session exported can be revealed in the file explorer.
   const exported = new Set<string>();
 
-  handleValidated(ipcMain, APP_CHANNELS.EXPORTS_REPORT, exportRequestSchema, async ({ clientId, kind, options, format }, event) => {
-    const file = await exports.export(clientId, kind, options, format);
+  handleValidated(ipcMain, APP_CHANNELS.EXPORTS_REPORT, exportRequestSchema, async ({ clientId, kind, options, format, presentation }, event) => {
+    const file = await exports.export(clientId, kind, options, format, presentation);
     const window = BrowserWindow.fromWebContents(event.sender);
     const saveOptions: SaveDialogOptions = {
       title: "Save report",

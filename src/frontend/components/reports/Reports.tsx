@@ -13,10 +13,18 @@ import {
   type ReportKind,
   type TrialBalance,
 } from "../../../common/reports/reportSchemas";
+import {
+  STATEMENT_LAYOUT_LABELS,
+  STATEMENT_LAYOUTS,
+  type MappedBalanceSheet,
+  type MappedIncomeStatement,
+  type StatementLayout,
+} from "../../../common/reports/mappedStatementSchemas";
 import type { FiscalYearView } from "../../../common/years/yearSchemas";
 import { lockedYearFor } from "../years/yearLogic";
 import { ReverseDialog } from "../years/ReverseDialog";
 import { presetRange, RANGE_PRESET_LABELS, type RangePreset } from "./reportRangeLogic";
+import { MappedBalanceSheetView, MappedIncomeStatementView } from "./MappedStatementViews";
 import { BalanceSheetView, GeneralLedgerView, IncomeStatementView, TrialBalanceView } from "./ReportViews";
 
 interface ReportsProps {
@@ -27,7 +35,12 @@ type LoadedReport =
   | { kind: "trialBalance"; data: TrialBalance }
   | { kind: "generalLedger"; data: GeneralLedger }
   | { kind: "balanceSheet"; data: BalanceSheet }
-  | { kind: "incomeStatement"; data: IncomeStatement };
+  | { kind: "incomeStatement"; data: IncomeStatement }
+  | { kind: "balanceSheet"; layout: "internal" | "external"; data: MappedBalanceSheet }
+  | { kind: "incomeStatement"; layout: "internal" | "external"; data: MappedIncomeStatement };
+
+/** Whether a report kind can be laid out by an FS map (FR-36). */
+const isStatement = (kind: ReportKind) => kind === "balanceSheet" || kind === "incomeStatement";
 
 const messageOf = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
@@ -41,7 +54,9 @@ export const periodLabel = (kind: ReportKind, range: DateRange): string =>
  * Reports (FR-29, FR-30): trial balance, general ledger, balance sheet and
  * income statement for any date range, always computed fresh from posted
  * entries. Clicking an account in the trial balance or a statement opens its
- * general ledger; the general ledger can also be viewed on its own.
+ * general ledger; the general ledger can also be viewed on its own. The
+ * balance sheet and income statement can be laid out by account or by the
+ * internal or external FS map (FR-36).
  */
 export function Reports({ client }: ReportsProps) {
   const [kind, setKind] = useState<ReportKind>("trialBalance");
@@ -57,6 +72,8 @@ export function Reports({ client }: ReportsProps) {
   const [refresh, setRefresh] = useState(0);
   const [exported, setExported] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [layout, setLayout] = useState<StatementLayout>("accounts");
+  const [showAccounts, setShowAccounts] = useState(false);
 
   const exportAs = async (format: "pdf" | "xlsx") => {
     setExporting(true);
@@ -68,6 +85,7 @@ export function Reports({ client }: ReportsProps) {
         kind,
         { from: range.from, to: range.to, includeClosingEntries: includeClosing, accountId },
         format,
+        { layout, showAccounts },
       );
       if (result) setExported(result.path);
     } catch (caught) {
@@ -90,6 +108,12 @@ export function Reports({ client }: ReportsProps) {
     let cancelled = false;
     const options = { from: range.from, to: range.to, includeClosingEntries: includeClosing, accountId };
     const load = async (): Promise<LoadedReport> => {
+      if (layout !== "accounts" && kind === "balanceSheet") {
+        return { kind, layout, data: await window.mappedStatements.balanceSheet(client.id, options, layout) };
+      }
+      if (layout !== "accounts" && kind === "incomeStatement") {
+        return { kind, layout, data: await window.mappedStatements.incomeStatement(client.id, options, layout) };
+      }
       switch (kind) {
         case "trialBalance":
           return { kind, data: await window.reports.trialBalance(client.id, options) };
@@ -111,7 +135,7 @@ export function Reports({ client }: ReportsProps) {
     return () => {
       cancelled = true;
     };
-  }, [client.id, kind, range, includeClosing, accountId, refresh]);
+  }, [client.id, kind, range, includeClosing, accountId, refresh, layout]);
 
   const openAccount = (id: number) => {
     setBackTo(kind);
@@ -178,6 +202,26 @@ export function Reports({ client }: ReportsProps) {
           <p className="muted">{periodLabel(kind, range)}</p>
         </div>
         <div className="report-actions">
+          {isStatement(kind) && (
+            <div className="range-controls">
+              <label className="inline-field">
+                <span>Layout</span>
+                <select value={layout} onChange={(event) => setLayout(event.target.value as StatementLayout)}>
+                  {STATEMENT_LAYOUTS.map((option) => (
+                    <option key={option} value={option}>
+                      {STATEMENT_LAYOUT_LABELS[option]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {layout !== "accounts" && (
+                <label className="radio-line">
+                  <input type="checkbox" checked={showAccounts} onChange={(event) => setShowAccounts(event.target.checked)} />
+                  Show accounts under each line
+                </label>
+              )}
+            </div>
+          )}
           {(kind === "trialBalance" || kind === "generalLedger" || kind === "balanceSheet") && (
             <label className="radio-line" title="Year-end closing entries move revenue and expenses into retained earnings">
               <input type="checkbox" checked={includeClosing} onChange={(event) => setIncludeClosing(event.target.checked)} />
@@ -220,8 +264,18 @@ export function Reports({ client }: ReportsProps) {
           onReverse={setReversing}
         />
       )}
-      {report?.kind === "balanceSheet" && kind === "balanceSheet" && <BalanceSheetView report={report.data} onOpenAccount={openAccount} />}
-      {report?.kind === "incomeStatement" && kind === "incomeStatement" && <IncomeStatementView report={report.data} onOpenAccount={openAccount} />}
+      {report?.kind === "balanceSheet" && kind === "balanceSheet" && layout === "accounts" && !("layout" in report) && (
+        <BalanceSheetView report={report.data} onOpenAccount={openAccount} />
+      )}
+      {report?.kind === "incomeStatement" && kind === "incomeStatement" && layout === "accounts" && !("layout" in report) && (
+        <IncomeStatementView report={report.data} onOpenAccount={openAccount} />
+      )}
+      {report?.kind === "balanceSheet" && "layout" in report && report.layout === layout && (
+        <MappedBalanceSheetView report={report.data} showAccounts={showAccounts} onOpenAccount={openAccount} />
+      )}
+      {report?.kind === "incomeStatement" && "layout" in report && report.layout === layout && (
+        <MappedIncomeStatementView report={report.data} showAccounts={showAccounts} onOpenAccount={openAccount} />
+      )}
 
       {reversing && (
         <ReverseDialog

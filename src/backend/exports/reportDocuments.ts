@@ -1,6 +1,9 @@
 import { ACCOUNT_TYPE_LABELS } from "../../common/accounts/accountSchemas";
 import { formatLongDate } from "../../common/dates";
 import type { DateRange } from "../../common/fiscalYears";
+import type { FsMap } from "../../common/fsMaps/fsMapSchemas";
+import { balanceSheetBlocks, incomeStatementBlocks, type StatementBlock } from "../../common/reports/mappedStatementLayout";
+import type { MappedBalanceSheet, MappedIncomeStatement } from "../../common/reports/mappedStatementSchemas";
 import {
   REPORT_TITLES,
   type BalanceSheet,
@@ -140,6 +143,61 @@ export const incomeStatementDocument = (clientName: string, report: IncomeStatem
       ],
     },
   ],
+});
+
+/** Printed titles of statements laid out by the internal map; the external map prints the plain title. */
+const mappedTitle = (kind: "balanceSheet" | "incomeStatement", map: FsMap): string =>
+  map === "internal" ? `${REPORT_TITLES[kind]} (internal)` : REPORT_TITLES[kind];
+
+const blockRows = (blocks: readonly StatementBlock[], showAccounts: boolean): DocRow[] =>
+  blocks.flatMap((block): DocRow[] => {
+    switch (block.kind) {
+      case "heading":
+        return [row([text(block.label), null, null], "section")];
+      case "empty":
+        return [row([null, text("None"), null], "subtle")];
+      case "note":
+        return [row([null, text(block.label), money(block.cents)])];
+      case "total":
+        return [row([null, text(block.label), money(block.cents)], block.grand ? "total" : "subtotal")];
+      case "line":
+        return [
+          row([text(block.line.code), text(block.line.name), money(block.line.amountCents)]),
+          ...(showAccounts
+            ? block.line.accounts.map((account) =>
+                row([null, text(`    ${account.code} ${account.name}`), money(account.amountCents)], "subtle"),
+              )
+            : []),
+        ];
+    }
+  });
+
+const MAPPED_COLUMNS = [col("Map no."), col("Line"), col("Amount", true)];
+
+/**
+ * Balance sheet rolled up by an FS map as a document (FR-36).
+ * @param clientName The client's name.
+ * @param report The mapped balance sheet.
+ * @param showAccounts List the accounts under each line.
+ */
+export const mappedBalanceSheetDocument = (clientName: string, report: MappedBalanceSheet, showAccounts: boolean): ReportDocument => ({
+  clientName,
+  title: mappedTitle("balanceSheet", report.map),
+  period: periodText("balanceSheet", report.range),
+  sections: [{ heading: null, columns: MAPPED_COLUMNS, rows: blockRows(balanceSheetBlocks(report), showAccounts) }],
+});
+
+/**
+ * Income statement rolled up by an FS map as a document (FR-36).
+ * @param clientName The client's name.
+ * @param report The mapped income statement.
+ * @param showAccounts List the accounts under each line.
+ */
+export const mappedIncomeStatementDocument = (clientName: string, report: MappedIncomeStatement, showAccounts: boolean): ReportDocument => ({
+  clientName,
+  title: mappedTitle("incomeStatement", report.map),
+  period: periodText("incomeStatement", report.range),
+  sections: [{ heading: null, columns: MAPPED_COLUMNS, rows: blockRows(incomeStatementBlocks(report), showAccounts) }],
 });
 
 /** Balance sheet as a document. */

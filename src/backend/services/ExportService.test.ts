@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { REPORT_KINDS } from "../../common/reports/reportSchemas";
 import type { ReportDocument } from "../exports/reportDocuments";
 import { renderReportHtml } from "../exports/renderers";
+import { SqliteFsMapRepository } from "../repositories/FsMapRepository";
 import { SqliteJournalRepository } from "../repositories/JournalRepository";
 import { SqliteReportRepository } from "../repositories/ReportRepository";
 import { SqliteAccountRepository } from "../repositories/SqliteAccountRepository";
@@ -12,13 +13,16 @@ import { TempClientWorkspace } from "../testing/TempClientWorkspace";
 import { ChartOfAccountsService } from "./ChartOfAccountsService";
 import { ClientService } from "./ClientService";
 import { ExportService, suggestedFileName } from "./ExportService";
+import { FsMapService } from "./FsMapService";
 import { JournalService } from "./JournalService";
+import { MappedStatementService } from "./MappedStatementService";
 import { ReportService } from "./ReportService";
 
 let workspace: TempClientWorkspace;
 let exportsService: ExportService;
 let reports: ReportService;
 let clientId: string;
+let fsMaps: FsMapService;
 const printed: string[] = [];
 
 beforeEach(() => {
@@ -27,13 +31,15 @@ beforeEach(() => {
   const chart = new ChartOfAccountsService((id) => new SqliteAccountRepository(pool.get(id)));
   const journal = new JournalService((id) => new SqliteJournalRepository(pool.get(id)), chart);
   reports = new ReportService((id) => new SqliteReportRepository(pool.get(id)));
+  const fsMapsFor = (id: string) => new SqliteFsMapRepository(pool.get(id));
+  fsMaps = new FsMapService(fsMapsFor, chart, workspace.inTransaction);
   printed.length = 0;
   exportsService = new ExportService(reports, workspace.clients, {
     print: async (html) => {
       printed.push(html);
       return new TextEncoder().encode("%PDF-fake");
     },
-  });
+  }, new MappedStatementService((id) => new SqliteReportRepository(pool.get(id)), fsMapsFor));
   clientId = new ClientService(workspace.clients, [chart]).create({ name: "Made-up <Rentals> & Co", fiscalYearEnd: "2026-12-31" }).id;
   const cash = chart.create(clientId, { code: "1000", name: "Chequing", type: "asset" }).id;
   const rent = chart.create(clientId, { code: "4000", name: "Rent income", type: "revenue" }).id;
@@ -90,6 +96,33 @@ describe("ExportService (FR-32)", () => {
     const income = XLSX.read((await exportsService.export(clientId, "incomeStatement", options, "xlsx")).bytes, { type: "buffer" });
     const incomeRows = XLSX.utils.sheet_to_json<(string | number)[]>(income.Sheets["Income Statement"], { header: 1 });
     expect(incomeRows.find((row) => row[1] === "Net income")?.[2]).toBe(1236.23);
+  });
+
+  it("exports statements laid out by the internal or external FS map (FR-36)", async () => {
+    const accounts = new Map(new ChartOfAccountsService((id) => new SqliteAccountRepository(workspace.pool.get(id))).list(clientId).map((a) => [a.code, a.id]));
+    const cash = fsMaps.createLine(clientId, "external", { code: "100", name: "Cash", section: "current_assets" });
+    const revenue = fsMaps.createLine(clientId, "external", { code: "400", name: "Revenue", section: "revenue" });
+    const expenses = fsMaps.createLine(clientId, "external", { code: "600", name: "Operating expenses", section: "operating_expenses" });
+    fsMaps.assign(clientId, "external", [accounts.get("1000")], cash.id);
+    fsMaps.assign(clientId, "external", [accounts.get("4000")], revenue.id);
+    fsMaps.assign(clientId, "external", [accounts.get("5100")], expenses.id);
+
+    const external = exportsService.document(clientId, "incomeStatement", options, { layout: "external" });
+    expect(external.title).toBe("Income Statement");
+    const lines = external.sections[0].rows.map((r) => r.cells.map((c) => (c === null ? null : "text" in c ? c.text : c.cents)));
+    expect(lines).toContainEqual(["400", "Revenue", 145000]);
+    expect(lines).toContainEqual([null, "Net income", 123623]);
+    expect(lines.some((cells) => String(cells[1]).includes("Repairs"))).toBe(false);
+
+    const detailed = exportsService.document(clientId, "incomeStatement", options, { layout: "external", showAccounts: true });
+    expect(detailed.sections[0].rows.some((r) => r.cells.some((c) => c && "text" in c && c.text.includes("5100 Repairs")))).toBe(true);
+
+    // Nothing is mapped on the internal map yet: everything lands in the catch-all lines, totals unchanged.
+    const internal = exportsService.document(clientId, "balanceSheet", options, { layout: "internal" });
+    expect(internal.title).toBe("Balance Sheet (internal)");
+    const pdf = await exportsService.export(clientId, "balanceSheet", options, "pdf", { layout: "internal" });
+    expect(pdf.fileName).toBe("Made-up -Rentals- & Co - Balance Sheet (internal) - 2026-12-31.pdf");
+    expect(printed.at(-1)).toContain("Accounts not mapped");
   });
 
   it("escapes any text in the HTML and makes safe file names", () => {

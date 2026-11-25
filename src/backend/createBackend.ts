@@ -154,7 +154,7 @@ export const createBackend = (dataDirectory: string, pdfPrinter: PdfPrinter): Ba
     reports,
     mappedStatements,
     fiscalYears,
-    exports: new ExportService(reports, clientRepository, pdfPrinter),
+    exports: new ExportService(reports, clientRepository, pdfPrinter, mappedStatements),
     dispose: () => pool.closeAll(),
   };
 };

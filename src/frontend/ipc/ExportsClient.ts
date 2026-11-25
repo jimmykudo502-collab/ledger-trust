@@ -8,8 +8,8 @@ import { invokeResult } from "./invokeResult";
  * The export IPC client.
  */
 const exportsClient: ExportsApi = {
-  exportReport: (clientId, kind, options, format) =>
-    invokeResult(APP_CHANNELS.EXPORTS_REPORT, { clientId, kind, options, format }),
+  exportReport: (clientId, kind, options, format, presentation) =>
+    invokeResult(APP_CHANNELS.EXPORTS_REPORT, { clientId, kind, options, format, presentation }),
   showInFolder: (path) => invokeResult(APP_CHANNELS.EXPORTS_SHOW, { path }),
 };
 

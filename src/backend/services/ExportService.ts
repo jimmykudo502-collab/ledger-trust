@@ -1,16 +1,19 @@
 import { clientIdSchema } from "../../common/clients/clientSchemas";
-import type { ExportFormat } from "../../common/reports/exportSchemas";
+import { exportPresentationSchema, type ExportFormat, type ExportPresentation } from "../../common/reports/exportSchemas";
 import type { ReportKind, ReportOptions } from "../../common/reports/reportSchemas";
 import { UserFacingError } from "../errors";
 import {
   balanceSheetDocument,
   generalLedgerDocument,
   incomeStatementDocument,
+  mappedBalanceSheetDocument,
+  mappedIncomeStatementDocument,
   trialBalanceDocument,
   type ReportDocument,
 } from "../exports/reportDocuments";
 import { renderReportHtml, renderReportWorkbook } from "../exports/renderers";
 import type { ClientRepository } from "../repositories/ClientRepository";
+import type { MappedStatementService } from "./MappedStatementService";
 import type { ReportService } from "./ReportService";
 
 /** Turns an HTML page into PDF bytes (Electron's print-to-PDF in the app). */
@@ -33,11 +36,13 @@ export class ExportService {
    * @param reports Computes the reports.
    * @param clients Looks up the client's name.
    * @param pdf Prints HTML to PDF.
+   * @param mapped Computes statements rolled up by an FS map.
    */
   public constructor(
     private readonly reports: ReportService,
     private readonly clients: ClientRepository,
     private readonly pdf: PdfPrinter,
+    private readonly mapped: MappedStatementService,
   ) {}
 
   /**
@@ -46,9 +51,16 @@ export class ExportService {
    * @param kind Which report.
    * @param options Dates and options, as on screen.
    * @param format PDF or Excel.
+   * @param presentation Statement layout (by account or FS map), as on screen.
    */
-  public async export(clientId: string, kind: ReportKind, options: ReportOptions, format: ExportFormat): Promise<ExportFile> {
-    const doc = this.document(clientId, kind, options);
+  public async export(
+    clientId: string,
+    kind: ReportKind,
+    options: ReportOptions,
+    format: ExportFormat,
+    presentation: ExportPresentation = {},
+  ): Promise<ExportFile> {
+    const doc = this.document(clientId, kind, options, presentation);
     const bytes = format === "pdf" ? await this.pdf.print(renderReportHtml(doc)) : renderReportWorkbook(doc);
     return { fileName: suggestedFileName(doc, options.to, format), bytes };
   }
@@ -58,10 +70,18 @@ export class ExportService {
    * @param clientId The client.
    * @param kind Which report.
    * @param options Dates and options.
+   * @param presentation Statement layout (by account or FS map).
    */
-  public document(clientId: string, kind: ReportKind, options: ReportOptions): ReportDocument {
+  public document(clientId: string, kind: ReportKind, options: ReportOptions, presentation: ExportPresentation = {}): ReportDocument {
     const client = this.clients.find(clientIdSchema.parse(clientId));
     if (!client) throw new UserFacingError("That client no longer exists.");
+    const { layout, showAccounts } = exportPresentationSchema.parse(presentation);
+    if (layout !== "accounts" && kind === "balanceSheet") {
+      return mappedBalanceSheetDocument(client.name, this.mapped.balanceSheet(clientId, options, layout), showAccounts);
+    }
+    if (layout !== "accounts" && kind === "incomeStatement") {
+      return mappedIncomeStatementDocument(client.name, this.mapped.incomeStatement(clientId, options, layout), showAccounts);
+    }
     switch (kind) {
       case "trialBalance":
         return trialBalanceDocument(client.name, this.reports.trialBalance(clientId, options));
