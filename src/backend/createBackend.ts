@@ -75,11 +75,16 @@ export const createBackend = (dataDirectory: string, pdfPrinter: PdfPrinter): Ba
   const clientRepository = new SqliteClientRepository(fileStore, pool);
   const clients = new ClientService(clientRepository, [chartOfAccounts]);
 
+  const inTransaction: TransactionRunner = (clientId, work) => pool.get(clientId).transaction(work)();
+  const fsMapsFor = (clientId: string) => new SqliteFsMapRepository(pool.get(clientId));
+  const fsMaps = new FsMapService(fsMapsFor, chartOfAccounts, inTransaction);
   const accountTemplates = new AccountTemplateService(
     new JsonFileTemplateStore(
       path.join(dataDirectory, "templates", "master-chart-of-accounts.json"),
     ),
     chartOfAccounts,
+    undefined,
+    fsMaps,
   );
 
   const bankAccounts = new BankAccountService(
@@ -95,10 +100,7 @@ export const createBackend = (dataDirectory: string, pdfPrinter: PdfPrinter): Ba
     chartOfAccounts,
   );
   const staging = new StagingService(stagingFor, bankAccounts);
-  const inTransaction: TransactionRunner = (clientId, work) => pool.get(clientId).transaction(work)();
   const journal = new JournalService((clientId) => new SqliteJournalRepository(pool.get(clientId)), chartOfAccounts);
-  const fsMapsFor = (clientId: string) => new SqliteFsMapRepository(pool.get(clientId));
-  const fsMaps = new FsMapService(fsMapsFor, chartOfAccounts, inTransaction);
   const coding = new CodingService(stagingFor, bankAccounts, chartOfAccounts);
   const reportsFor = (clientId: string) => new SqliteReportRepository(pool.get(clientId));
   const reports = new ReportService(reportsFor);

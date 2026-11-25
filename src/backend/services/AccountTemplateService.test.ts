@@ -8,11 +8,15 @@ import {
   type Account,
   type AccountInput,
 } from "../../common/accounts/accountSchemas";
+import { SqliteFsMapRepository } from "../repositories/FsMapRepository";
 import { InMemoryAccountRepository } from "../repositories/InMemoryAccountRepository";
+import { SqliteAccountRepository } from "../repositories/SqliteAccountRepository";
 import { TempClientWorkspace } from "../testing/TempClientWorkspace";
 import { InMemoryTemplateStore, JsonFileTemplateStore } from "../templates/TemplateStore";
 import { AccountTemplateService } from "./AccountTemplateService";
 import { ChartOfAccountsService } from "./ChartOfAccountsService";
+import { ClientService } from "./ClientService";
+import { FsMapService } from "./FsMapService";
 
 const accountInputArb: fc.Arbitrary<AccountInput> = fc.record({
   code: fc.stringMatching(/^[1-9][0-9]{2,3}$/),
@@ -119,6 +123,7 @@ describe("AccountTemplateService", () => {
 
     expect(templates.saveFromClient(source)).toEqual({
       accountCount: 1,
+      fsLineCount: 0,
       savedAt: "2026-11-22T12:00:00.000Z",
     });
   });
@@ -166,5 +171,51 @@ describe("JsonFileTemplateStore", () => {
     fs.writeFileSync(filePath, '{"version": 1, "accounts": [{"code": ""}]}');
 
     expect(() => new JsonFileTemplateStore(filePath).read()).toThrow(/damaged/);
+  });
+});
+
+describe("AccountTemplateService with FS maps (FR-35)", () => {
+  let workspace: TempClientWorkspace;
+
+  beforeEach(() => {
+    workspace = new TempClientWorkspace();
+  });
+
+  afterEach(() => {
+    workspace.dispose();
+  });
+
+  it("carries FS lines and account map numbers to another client without changing what it has", () => {
+    const chart = new ChartOfAccountsService((id) => new SqliteAccountRepository(workspace.pool.get(id)));
+    const fsMaps = new FsMapService((id) => new SqliteFsMapRepository(workspace.pool.get(id)), chart, workspace.inTransaction);
+    const templates = new AccountTemplateService(new InMemoryTemplateStore(), chart, () => new Date("2026-11-22T12:00:00Z"), fsMaps);
+    const clients = new ClientService(workspace.clients, [chart]);
+
+    const source = clients.create({ name: "Made-up source", fiscalYearEnd: "2026-12-31" }).id;
+    const cash = chart.create(source, { code: "1000", name: "Chequing", type: "asset" });
+    const rent = chart.create(source, { code: "4000", name: "Rent income", type: "revenue" });
+    chart.create(source, { code: "5100", name: "Repairs", type: "expense" });
+    const cashLine = fsMaps.createLine(source, "internal", { code: "1000", name: "Cash and bank", section: "current_assets" });
+    const revenueLine = fsMaps.createLine(source, "external", { code: "400", name: "Revenue", section: "revenue" });
+    fsMaps.assign(source, "internal", [cash.id], cashLine.id);
+    fsMaps.assign(source, "external", [rent.id], revenueLine.id);
+
+    expect(templates.saveFromClient(source)).toMatchObject({ accountCount: 3, fsLineCount: 2 });
+
+    // The target already maps its own 1000 elsewhere; that must survive.
+    const target = clients.create({ name: "Made-up target", fiscalYearEnd: "2026-12-31" }).id;
+    const targetCash = chart.create(target, { code: "1000", name: "Bank", type: "asset" });
+    const own = fsMaps.createLine(target, "internal", { code: "1010", name: "My cash line", section: "current_assets" });
+    fsMaps.assign(target, "internal", [targetCash.id], own.id);
+
+    expect(templates.importIntoClient(target)).toEqual({ added: 2, skipped: 1, fsLinesAdded: 2, fsMappingsAdded: 1 });
+    const overview = fsMaps.overview(target);
+    const lineCode = (lineId: number | null) => overview.lines.find((line) => line.id === lineId)?.code ?? null;
+    const byCode = (code: string) => overview.assignments.find((a) => a.accountId === chart.findByCode(target, code)?.id);
+    expect(lineCode(byCode("1000").internal)).toBe("1010");
+    expect(lineCode(byCode("4000").external)).toBe("400");
+    expect(byCode("5100")).toMatchObject({ internal: null, external: null });
+
+    expect(templates.importIntoClient(target)).toEqual({ added: 0, skipped: 3, fsLinesAdded: 0, fsMappingsAdded: 0 });
   });
 });

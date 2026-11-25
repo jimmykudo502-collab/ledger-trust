@@ -54,9 +54,15 @@ export function TemplateActions({
     run(async () => {
       const result = await window.accountTemplates.importIntoClient(clientId);
       onImported();
-      return result.skipped > 0
-        ? `Added ${plural(result.added, "account")}. Skipped ${plural(result.skipped, "account")} whose code this client already uses.`
-        : `Added ${plural(result.added, "account")} from the master template.`;
+      const accounts =
+        result.skipped > 0
+          ? `Added ${plural(result.added, "account")}. Skipped ${plural(result.skipped, "account")} whose code this client already uses.`
+          : `Added ${plural(result.added, "account")} from the master template.`;
+      const fs =
+        result.fsLinesAdded + result.fsMappingsAdded > 0
+          ? ` Added ${plural(result.fsLinesAdded, "FS line")} and mapped ${plural(result.fsMappingsAdded, "account line")}.`
+          : "";
+      return accounts + fs;
     });
 
   const saveTemplate = () => {
@@ -73,7 +79,9 @@ export function TemplateActions({
     void run(async () => {
       const saved = await window.accountTemplates.saveFromClient(clientId);
       setInfo(saved);
-      return `Saved ${plural(saved.accountCount, "account")} as the master template.`;
+      return `Saved ${plural(saved.accountCount, "account")}${
+        saved.fsLineCount > 0 ? ` and ${plural(saved.fsLineCount, "FS line")}` : ""
+      } as the master template.`;
     });
   };
 
