@@ -5,6 +5,7 @@ import type { BankPostingService } from "../services/BankPostingService";
 import type { ChartOfAccountsService } from "../services/ChartOfAccountsService";
 import type { ClientService } from "../services/ClientService";
 import type { CodingRuleService } from "../services/CodingRuleService";
+import type { FsMapService } from "../services/FsMapService";
 import type { StagingRepositoryProvider } from "../services/ImportService";
 import type { ManualEntryService } from "../services/ManualEntryService";
 import type { TransferService } from "../services/TransferService";
@@ -12,6 +13,7 @@ import {
   DEMO_ACCOUNTS,
   DEMO_CLIENT_NAME,
   DEMO_ENTRIES,
+  DEMO_FS_MAP,
   DEMO_POSTED_THROUGH,
   DEMO_RULES,
   DEMO_TABS,
@@ -28,6 +30,7 @@ export interface DemoDependencies {
   readonly transfers: TransferService;
   readonly posting: BankPostingService;
   readonly manualEntries: ManualEntryService;
+  readonly fsMaps: FsMapService;
 }
 
 /**
@@ -35,7 +38,8 @@ export interface DemoDependencies {
  * real files). It goes through the app's own services, so it exercises the
  * same import, rule, transfer, posting and journal code as real use:
  * January to early March is posted, and the rest of March waits in staging,
- * coded and matched, ready to post.
+ * coded and matched, ready to post. Both FS maps start from the starter
+ * lines with every account mapped.
  */
 export class DemoClientService {
   /**
@@ -48,7 +52,7 @@ export class DemoClientService {
    * @returns The new client.
    */
   public create(): ClientSummary {
-    const { clients, chartOfAccounts, bankAccounts, codingRules, transfers, posting, manualEntries } = this.deps;
+    const { clients, chartOfAccounts, bankAccounts, codingRules, transfers, posting, manualEntries, fsMaps } = this.deps;
     const client = clients.create({ name: DEMO_CLIENT_NAME, fiscalYearEnd: "2026-12-31" });
     const tabCodes = new Set(DEMO_TABS.map((tab) => tab.code));
     for (const account of DEMO_ACCOUNTS.filter((a) => !tabCodes.has(a.code))) {
@@ -82,6 +86,18 @@ export class DemoClientService {
         description: entry.description,
         lines: entry.lines.map(([code, debitCents, creditCents]) => ({ accountId: accountId(code), debitCents, creditCents })),
       });
+    }
+
+    fsMaps.addStarterLines(client.id, "internal");
+    fsMaps.addStarterLines(client.id, "external");
+    const lineId = (map: "internal" | "external", code: string) => {
+      const line = fsMaps.findLineByCode(client.id, map, code);
+      if (!line) throw new UserFacingError(`Demo FS line ${code} is missing.`);
+      return line.id;
+    };
+    for (const [code, internal, external] of DEMO_FS_MAP) {
+      fsMaps.assign(client.id, "internal", [accountId(code)], lineId("internal", internal));
+      fsMaps.assign(client.id, "external", [accountId(code)], lineId("external", external));
     }
     return clients.list().find((candidate) => candidate.id === client.id) ?? client;
   }

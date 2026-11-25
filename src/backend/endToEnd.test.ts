@@ -79,6 +79,20 @@ describe("end to end with a made-up client (step 10)", () => {
     expect(is.netIncomeCents).toBe(expectedNetIncome());
     expect(bs.currentEarningsCents).toBe(is.netIncomeCents);
 
+    // Internal and external FS layouts show the same numbers, rolled up differently (FR-36).
+    for (const map of ["internal", "external"] as const) {
+      const mappedSheet = backend.mappedStatements.balanceSheet(clientId, Q1, map);
+      expect(mappedSheet.unmappedAccountCount).toBe(0);
+      expect(mappedSheet.totalAssetsCents).toBe(bs.totalAssetsCents);
+      expect(mappedSheet.totalLiabilitiesCents).toBe(bs.totalLiabilitiesCents);
+      expect(mappedSheet.totalEquityCents).toBe(bs.totalEquityCents);
+      const mappedIncome = backend.mappedStatements.incomeStatement(clientId, Q1, map);
+      expect(mappedIncome.unmappedAccountCount).toBe(0);
+      expect(mappedIncome.netIncomeCents).toBe(is.netIncomeCents);
+    }
+    const external = backend.mappedStatements.incomeStatement(clientId, Q1, "external");
+    expect(external.operatingExpenses.lines.map((line) => line.code)).toEqual(["600", "610", "690"]);
+
     const chequing = tabs.find((tab) => tab.name === "Chequing");
     const chequingRows = DEMO_TABS[0].rows();
     const opening = DEMO_ENTRIES[0].lines.find(([code]) => code === "1000")[1];
@@ -115,6 +129,9 @@ describe("end to end with a made-up client (step 10)", () => {
     expect(after.totals.closingDebitCents).toBe(after.totals.closingCreditCents);
 
     // Every report exports to PDF and Excel with the client name, title and period (FR-32).
+    const externalPdf = await backend.exports.export(clientId, "balanceSheet", FY2026, "pdf", { layout: "external" });
+    expect(externalPdf.fileName).toContain("Balance Sheet - 2026-12-31");
+    expect(printed.at(-1)).toContain("Property and equipment, net");
     for (const kind of REPORT_KINDS) {
       const pdf = await backend.exports.export(clientId, kind, FY2026, "pdf");
       expect(pdf.fileName.endsWith(".pdf")).toBe(true);

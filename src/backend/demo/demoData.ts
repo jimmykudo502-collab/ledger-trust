@@ -41,6 +41,38 @@ export const DEMO_ACCOUNTS: readonly AccountInput[] = [
   { code: "6100", name: "Snow removal", type: "expense" },
 ];
 
+/**
+ * Each demo account's line on the internal and external FS maps (FR-34):
+ * account code → [internal map number, external map number]. The map lines
+ * are the starter lines (FR-35).
+ */
+export const DEMO_FS_MAP: readonly [string, string, string][] = [
+  ["1000", "1000", "100"],
+  ["1010", "1000", "100"],
+  ["1500", "1500", "150"],
+  ["1510", "1590", "150"],
+  ["1999", "1300", "120"],
+  ["2100", "2100", "200"],
+  ["2500", "2500", "250"],
+  ["3000", "3000", "300"],
+  ["3900", "3900", "390"],
+  ["4000", "4000", "400"],
+  ["4010", "4100", "400"],
+  ["4900", "7000", "700"],
+  ["5100", "6600", "600"],
+  ["5200", "6700", "600"],
+  ["5300", "6500", "600"],
+  ["5400", "6200", "610"],
+  ["5500", "7500", "750"],
+  ["5600", "6100", "610"],
+  ["5700", "6000", "610"],
+  ["5800", "6400", "610"],
+  ["5900", "6800", "610"],
+  ["5950", "6300", "610"],
+  ["6000", "6900", "690"],
+  ["6100", "6600", "600"],
+];
+
 /** Remembered coding rules (FR-18): description text → account code. */
 export const DEMO_RULES: readonly [string, string][] = [
   ["RENT", "4000"],

@@ -136,6 +136,7 @@ export const createBackend = (dataDirectory: string, pdfPrinter: PdfPrinter): Ba
     transfers,
     posting,
     manualEntries,
+    fsMaps,
   });
 
   return {
