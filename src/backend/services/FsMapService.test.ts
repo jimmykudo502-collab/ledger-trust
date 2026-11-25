@@ -44,14 +44,20 @@ const assignmentOf = (clientId: string, accountId: number, map: FsMap) =>
 
 describe("FsMapService (FR-33 to FR-35)", () => {
   it("maps accounts only to lines on their own statement, all or nothing", () => {
+    // One client for every run (creating a database file per run is slow);
+    // each run starts with every account unmapped.
+    const { clientId, accounts } = setup();
+    const allIds = accounts.map((a) => a.id);
+    let run = 0;
     fc.assert(
       fc.property(
         fc.constantFrom(...FS_MAPS),
         fc.constantFrom(...FS_SECTIONS),
         fc.uniqueArray(fc.nat(ACCOUNTS.length - 1), { minLength: 1, maxLength: ACCOUNTS.length }),
         (map, section, picks) => {
-          const { clientId, accounts } = setup();
-          const line = fsMaps.createLine(clientId, map, { code: "X1", name: "Test line", section });
+          FS_MAPS.forEach((m) => fsMaps.assign(clientId, m, allIds, null));
+          run += 1;
+          const line = fsMaps.createLine(clientId, map, { code: `X${run}`, name: "Test line", section });
           const chosen = picks.map((i) => accounts[i]);
           const allFit = chosen.every((account) => canMap(account.type, section));
           if (allFit) {
