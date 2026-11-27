@@ -5,8 +5,14 @@ import { ACCOUNT_TYPES, type AccountType } from "../../common/accounts/accountSc
 import { FS_SECTIONS, type FsLine, type FsMap, type FsSection } from "../../common/fsMaps/fsMapSchemas";
 import type { MappedSection } from "../../common/reports/mappedStatementSchemas";
 import type { AccountBalance } from "../../common/reports/reportSchemas";
-import { buildMappedBalanceSheet, buildMappedIncomeStatement, UNMAPPED_LINE_NAME, type FsMapping } from "./mappedStatements";
-import { buildBalanceSheet, buildIncomeStatement } from "./reportBuilders";
+import {
+  buildFsTrialBalance,
+  buildMappedBalanceSheet,
+  buildMappedIncomeStatement,
+  UNMAPPED_LINE_NAME,
+  type FsMapping,
+} from "./mappedStatements";
+import { buildBalanceSheet, buildIncomeStatement, buildTrialBalance } from "./reportBuilders";
 
 const RANGE = { from: "2026-01-01", to: "2026-12-31" };
 
@@ -134,6 +140,56 @@ describe("mapped statements (FR-36)", () => {
     );
   });
 
+  it("trial balance by FS map balances, lists every account once and ties to the mapped statements (FR-37)", () => {
+    fc.assert(
+      fc.property(scenarioArb, ([balances, internal, external]) => {
+        const plain = buildTrialBalance(RANGE, balances);
+        for (const mapping of [internal, external]) {
+          const tb = buildFsTrialBalance(RANGE, balances, mapping);
+          expect(tb.totals.debitCents).toBe(plain.totals.closingDebitCents);
+          expect(tb.totals.creditCents).toBe(plain.totals.closingCreditCents);
+          expect(tb.totals.debitCents).toBe(tb.totals.creditCents);
+
+          const shown = tb.sections.flatMap((s) => s.lines.flatMap((l) => l.accounts.map((a) => a.accountId)));
+          expect(shown.sort()).toEqual(balances.filter((b) => b.closingCents !== 0).map((b) => b.accountId).sort());
+          expect(tb.sections.map((s) => s.section)).toEqual(FS_SECTIONS.filter((s) => tb.sections.some((t) => t.section === s)));
+          for (const section of tb.sections) {
+            for (const line of section.lines) expect(line.netCents).toBe(line.accounts.reduce((s, a) => s + a.closingCents, 0));
+            expect(section.fsAmountCents).toBe(section.lines.reduce((s, l) => s + l.fsAmountCents, 0));
+          }
+
+          // Balance sheet lines show the same amounts as the mapped balance sheet.
+          const sheet = buildMappedBalanceSheet(RANGE, balances, mapping);
+          for (const section of [...sheet.assets, ...sheet.liabilities, sheet.equity]) {
+            const same = tb.sections.find((s) => s.section === section.section);
+            expect(same?.fsAmountCents ?? 0).toBe(section.totalCents);
+            for (const line of section.lines) {
+              expect(same?.lines.find((l) => l.lineId === line.lineId)?.fsAmountCents).toBe(line.amountCents);
+            }
+          }
+        }
+      }),
+    );
+  });
+
+  it("trial balance by FS map ties to the mapped income statement when revenue and expenses start the range at zero", () => {
+    fc.assert(
+      fc.property(scenarioArb, ([raw, mapping]) => {
+        const balances = raw.map((b) =>
+          b.type === "revenue" || b.type === "expense" ? { ...b, openingCents: 0, closingCents: b.debitCents - b.creditCents } : b,
+        );
+        const tb = buildFsTrialBalance(RANGE, balances, mapping);
+        const income = buildMappedIncomeStatement(RANGE, balances, mapping);
+        for (const section of [income.revenue, income.costOfSales, income.operatingExpenses, income.otherIncome, income.otherExpenses, income.incomeTaxes]) {
+          expect(tb.sections.find((s) => s.section === section.section)?.fsAmountCents ?? 0).toBe(section.totalCents);
+        }
+        expect(tb.unmappedAccountCount).toBe(
+          buildMappedBalanceSheet(RANGE, balances, mapping).unmappedAccountCount + income.unmappedAccountCount,
+        );
+      }),
+    );
+  });
+
   it("rolls accounts into lines and puts unmapped or misfit accounts in a catch-all line", () => {
     const row = (accountId: number, code: string, type: AccountType, closingCents: number): AccountBalance => ({
       accountId, code, name: `A${code}`, type, openingCents: 0, debitCents: Math.max(closingCents, 0), creditCents: Math.max(-closingCents, 0), closingCents,
@@ -160,5 +216,23 @@ describe("mapped statements (FR-36)", () => {
     expect(sheet.unmappedAccountCount).toBe(2);
     expect(sheet.currentEarningsCents).toBe(135_00);
     expect(sheet.totalAssetsCents).toBe(175_00);
+
+    const tb = buildFsTrialBalance(RANGE, balances, mapping);
+    expect(tb.sections.map((s) => s.section)).toEqual(["current_assets", "current_liabilities", "revenue"]);
+    expect(tb.sections[0].lines[0]).toEqual({
+      lineId: 10,
+      code: "100",
+      name: "Cash",
+      netCents: 75_00,
+      fsAmountCents: 75_00,
+      accounts: [
+        { accountId: 1, code: "1000", name: "A1000", closingCents: 50_00 },
+        { accountId: 2, code: "1010", name: "A1010", closingCents: 25_00 },
+      ],
+    });
+    expect(tb.sections[1].lines).toEqual([expect.objectContaining({ lineId: null, netCents: -40_00, fsAmountCents: 40_00 })]);
+    expect(tb.sections[2]).toEqual(expect.objectContaining({ fsAmountCents: 135_00 }));
+    expect(tb.totals).toEqual({ debitCents: 175_00, creditCents: 175_00 });
+    expect(tb.unmappedAccountCount).toBe(3);
   });
 });

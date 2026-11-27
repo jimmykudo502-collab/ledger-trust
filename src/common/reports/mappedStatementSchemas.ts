@@ -79,6 +79,55 @@ export interface MappedIncomeStatement {
   readonly unmappedAccountCount: number;
 }
 
+/** An account's closing balance on the trial balance by FS map. */
+export interface FsTrialBalanceAccount {
+  readonly accountId: number;
+  readonly code: string;
+  readonly name: string;
+  /** Closing balance, debit-positive. */
+  readonly closingCents: number;
+}
+
+/** One FS line on the trial balance by FS map, with the accounts that make it up. */
+export interface FsTrialBalanceLine {
+  /** The FS line's id, or null for the accounts not mapped on this map. */
+  readonly lineId: number | null;
+  readonly code: string;
+  readonly name: string;
+  /** Sum of the accounts' closing balances, debit-positive. */
+  readonly netCents: number;
+  /** The same amount in the section's normal-balance sign, as shown on the statement. */
+  readonly fsAmountCents: number;
+  readonly accounts: readonly FsTrialBalanceAccount[];
+}
+
+/** A statement section on the trial balance by FS map. */
+export interface FsTrialBalanceSection {
+  readonly section: FsSection;
+  readonly lines: readonly FsTrialBalanceLine[];
+  /** Section total in its normal-balance sign. */
+  readonly fsAmountCents: number;
+}
+
+/**
+ * Trial balance grouped by an FS map (FR-37): every account with a closing
+ * balance, under the FS line it rolls into, so each number on the mapped
+ * statements can be traced to its accounts.
+ */
+export interface FsTrialBalance {
+  readonly range: DateRange;
+  readonly map: FsMap;
+  /** Sections with at least one account, in statement order. */
+  readonly sections: readonly FsTrialBalanceSection[];
+  readonly totals: {
+    /** Sum of closing balances that are debits / credits. */
+    readonly debitCents: number;
+    readonly creditCents: number;
+  };
+  /** Accounts with a balance that have no line on this map. */
+  readonly unmappedAccountCount: number;
+}
+
 /**
  * The mapped statements API the preload script exposes to the renderer as
  * `window.mappedStatements`.
@@ -86,4 +135,5 @@ export interface MappedIncomeStatement {
 export interface MappedStatementsApi {
   balanceSheet(clientId: ClientId, options: ReportOptions, map: FsMap): Promise<MappedBalanceSheet>;
   incomeStatement(clientId: ClientId, options: ReportOptions, map: FsMap): Promise<MappedIncomeStatement>;
+  trialBalance(clientId: ClientId, options: ReportOptions, map: FsMap): Promise<FsTrialBalance>;
 }

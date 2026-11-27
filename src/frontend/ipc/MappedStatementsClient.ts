@@ -10,6 +10,7 @@ import { invokeResult } from "./invokeResult";
 const mappedStatementsClient: MappedStatementsApi = {
   balanceSheet: (clientId, options, map) => invokeResult(APP_CHANNELS.MAPPED_BALANCE_SHEET, { clientId, options, map }),
   incomeStatement: (clientId, options, map) => invokeResult(APP_CHANNELS.MAPPED_INCOME_STATEMENT, { clientId, options, map }),
+  trialBalance: (clientId, options, map) => invokeResult(APP_CHANNELS.MAPPED_TRIAL_BALANCE, { clientId, options, map }),
 };
 
 /**

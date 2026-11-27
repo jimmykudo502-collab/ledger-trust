@@ -20,4 +20,7 @@ export const registerMappedStatementHandlers = (ipcMain: IpcMain, mapped: Mapped
   handleValidated(ipcMain, APP_CHANNELS.MAPPED_INCOME_STATEMENT, mappedRequestSchema, ({ clientId, options, map }) =>
     mapped.incomeStatement(clientId, options, map),
   );
+  handleValidated(ipcMain, APP_CHANNELS.MAPPED_TRIAL_BALANCE, mappedRequestSchema, ({ clientId, options, map }) =>
+    mapped.trialBalance(clientId, options, map),
+  );
 };

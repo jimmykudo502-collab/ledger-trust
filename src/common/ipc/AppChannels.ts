@@ -50,6 +50,7 @@ export const APP_CHANNELS = {
   REPORTS_INCOME_STATEMENT: "app:reportsIncomeStatement",
   MAPPED_BALANCE_SHEET: "app:mappedBalanceSheet",
   MAPPED_INCOME_STATEMENT: "app:mappedIncomeStatement",
+  MAPPED_TRIAL_BALANCE: "app:mappedTrialBalance",
   YEARS_OVERVIEW: "app:yearsOverview",
   YEARS_LOCK: "app:yearsLock",
   YEARS_UNLOCK: "app:yearsUnlock",

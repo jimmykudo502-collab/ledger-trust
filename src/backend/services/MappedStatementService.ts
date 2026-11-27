@@ -1,8 +1,8 @@
 import { clientIdSchema } from "../../common/clients/clientSchemas";
 import { fsMapSchema, type FsMap } from "../../common/fsMaps/fsMapSchemas";
-import type { MappedBalanceSheet, MappedIncomeStatement } from "../../common/reports/mappedStatementSchemas";
+import type { FsTrialBalance, MappedBalanceSheet, MappedIncomeStatement } from "../../common/reports/mappedStatementSchemas";
 import { reportOptionsSchema, type ReportOptions } from "../../common/reports/reportSchemas";
-import { buildMappedBalanceSheet, buildMappedIncomeStatement, type FsMapping } from "../reports/mappedStatements";
+import { buildFsTrialBalance, buildMappedBalanceSheet, buildMappedIncomeStatement, type FsMapping } from "../reports/mappedStatements";
 import type { FsMapRepositoryProvider } from "./FsMapService";
 import type { ReportRepositoryProvider } from "./ReportService";
 
@@ -49,6 +49,24 @@ export class MappedStatementService {
     const id = clientIdSchema.parse(clientId);
     const balances = this.reportsFor(id).balances({ from: valid.from, to: valid.to, includeClosingEntries: false });
     return buildMappedIncomeStatement({ from: valid.from, to: valid.to }, balances, this.mapping(id, map));
+  }
+
+  /**
+   * Trial balance grouped by FS line (FR-37), with the same closing balances
+   * as the account-by-account trial balance.
+   * @param clientId The client.
+   * @param options Dates and options.
+   * @param map Internal or external.
+   */
+  public trialBalance(clientId: string, options: ReportOptions, map: FsMap): FsTrialBalance {
+    const valid = reportOptionsSchema.parse(options);
+    const id = clientIdSchema.parse(clientId);
+    const balances = this.reportsFor(id).balances({
+      from: valid.from,
+      to: valid.to,
+      includeClosingEntries: valid.includeClosingEntries,
+    });
+    return buildFsTrialBalance({ from: valid.from, to: valid.to }, balances, this.mapping(id, map));
   }
 
   private mapping(clientId: string, map: FsMap): FsMapping {

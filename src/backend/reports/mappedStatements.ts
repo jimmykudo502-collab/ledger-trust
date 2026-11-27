@@ -4,6 +4,7 @@ import {
   canMap,
   DEFAULT_SECTION_FOR_TYPE,
   FS_SECTION_INFO,
+  FS_SECTIONS,
   statementOfType,
   type FsLine,
   type FsMap,
@@ -11,6 +12,9 @@ import {
   type FsStatement,
 } from "../../common/fsMaps/fsMapSchemas";
 import type {
+  FsTrialBalance,
+  FsTrialBalanceAccount,
+  FsTrialBalanceLine,
   MappedBalanceSheet,
   MappedIncomeStatement,
   MappedLine,
@@ -36,11 +40,32 @@ export interface FsMapping {
 /** The label of the catch-all line for accounts with no line on the map. */
 export const UNMAPPED_LINE_NAME = "Accounts not mapped";
 
-interface Bucket {
+/** Where an account goes on a map: its line, or the catch-all line of its type's section. */
+interface Placement {
+  readonly key: string;
   readonly lineId: number | null;
   readonly code: string;
   readonly name: string;
   readonly section: FsSection;
+  /** False when the account has no line, or a line on the other statement. */
+  readonly fits: boolean;
+}
+
+const placeAccount = (row: AccountBalance, linesById: ReadonlyMap<number, FsLine>, mapping: FsMapping): Placement => {
+  const mappedId = mapping.lineOfAccount.get(row.accountId);
+  const line = mappedId === undefined ? undefined : linesById.get(mappedId);
+  if (line !== undefined && canMap(row.type, line.section)) {
+    return { key: `line:${line.id}`, lineId: line.id, code: line.code, name: line.name, section: line.section, fits: true };
+  }
+  const section = DEFAULT_SECTION_FOR_TYPE[row.type];
+  return { key: `unmapped:${section}`, lineId: null, code: "", name: UNMAPPED_LINE_NAME, section, fits: false };
+};
+
+/** An amount in a section's normal-balance sign (never -0). */
+const inNormalSign = (section: FsSection, debitCents: number): number =>
+  FS_SECTION_INFO[section].normal === "debit" ? debitCents : 0 - debitCents;
+
+interface Bucket extends Placement {
   readonly accounts: StatementLine[];
 }
 
@@ -67,20 +92,11 @@ const rollUp = (
     if (statementOfType(row.type) !== statement) continue;
     const value = debitValue(row);
     if (value === 0) continue;
-    const mappedId = mapping.lineOfAccount.get(row.accountId);
-    const line = mappedId === undefined ? undefined : linesById.get(mappedId);
-    const fits = line !== undefined && canMap(row.type, line.section);
-    if (!fits) unmappedAccountCount += 1;
-    const section = fits ? line.section : DEFAULT_SECTION_FOR_TYPE[row.type];
-    const key = fits ? `line:${line.id}` : `unmapped:${section}`;
-    const bucket =
-      buckets.get(key) ??
-      (fits
-        ? { lineId: line.id, code: line.code, name: line.name, section, accounts: [] }
-        : { lineId: null, code: "", name: UNMAPPED_LINE_NAME, section, accounts: [] });
-    buckets.set(key, bucket);
-    const sign = FS_SECTION_INFO[section].normal === "debit" ? 1 : -1;
-    bucket.accounts.push({ accountId: row.accountId, code: row.code, name: row.name, amountCents: sign * value });
+    const placement = placeAccount(row, linesById, mapping);
+    if (!placement.fits) unmappedAccountCount += 1;
+    const bucket = buckets.get(placement.key) ?? { ...placement, accounts: [] };
+    buckets.set(placement.key, bucket);
+    bucket.accounts.push({ accountId: row.accountId, code: row.code, name: row.name, amountCents: inNormalSign(placement.section, value) });
   }
 
   const sections = new Map<FsSection, MappedSection>();
@@ -102,8 +118,10 @@ const rollUp = (
   return { sections, unmappedAccountCount };
 };
 
+type Sortable = { readonly lineId: number | null; readonly code: string };
+
 /** Mapped lines by map number; the catch-all line goes last. */
-const compareLines = (a: MappedLine, b: MappedLine): number =>
+const compareLines = (a: Sortable, b: Sortable): number =>
   Number(a.lineId === null) - Number(b.lineId === null) || a.code.localeCompare(b.code, undefined, { numeric: true });
 
 const sectionOf = (rolled: RollUp, section: FsSection): MappedSection =>
@@ -179,6 +197,61 @@ export const buildMappedIncomeStatement = (
     incomeTaxes,
     netIncomeCents: incomeBeforeTaxesCents - incomeTaxes.totalCents,
     unmappedAccountCount: rolled.unmappedAccountCount,
+  };
+};
+
+/**
+ * Trial balance grouped by an FS map (FR-37): every account with a closing
+ * balance under the line it rolls into, with each line's and section's
+ * amount as shown on the mapped statements. Placement follows the mapped
+ * statements exactly, including the catch-all line for unmapped accounts.
+ * @param range The report's dates.
+ * @param balances Every account's balances for the range.
+ * @param mapping The FS map to group by.
+ */
+export const buildFsTrialBalance = (
+  range: DateRange,
+  balances: readonly AccountBalance[],
+  mapping: FsMapping,
+): FsTrialBalance => {
+  const linesById = new Map(mapping.lines.map((line) => [line.id, line]));
+  const buckets = new Map<string, Placement & { accounts: FsTrialBalanceAccount[] }>();
+  let unmappedAccountCount = 0;
+  for (const row of balances) {
+    if (row.closingCents === 0) continue;
+    const placement = placeAccount(row, linesById, mapping);
+    if (!placement.fits) unmappedAccountCount += 1;
+    const bucket = buckets.get(placement.key) ?? { ...placement, accounts: [] };
+    buckets.set(placement.key, bucket);
+    bucket.accounts.push({ accountId: row.accountId, code: row.code, name: row.name, closingCents: row.closingCents });
+  }
+  const sections = FS_SECTIONS.flatMap((section) => {
+    const lines = [...buckets.values()]
+      .filter((bucket) => bucket.section === section)
+      .map((bucket): FsTrialBalanceLine => {
+        const netCents = sum(bucket.accounts.map((account) => account.closingCents));
+        return {
+          lineId: bucket.lineId,
+          code: bucket.code,
+          name: bucket.name,
+          netCents,
+          fsAmountCents: inNormalSign(section, netCents),
+          accounts: [...bucket.accounts].sort(compareAccountsByCode),
+        };
+      })
+      .sort(compareLines);
+    return lines.length === 0 ? [] : [{ section, lines, fsAmountCents: sum(lines.map((line) => line.fsAmountCents)) }];
+  });
+  const closings = balances.map((row) => row.closingCents);
+  return {
+    range,
+    map: mapping.map,
+    sections,
+    totals: {
+      debitCents: sum(closings.map((cents) => Math.max(cents, 0))),
+      creditCents: sum(closings.map((cents) => Math.max(0 - cents, 0))),
+    },
+    unmappedAccountCount,
   };
 };
 
