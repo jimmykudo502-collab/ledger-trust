@@ -8,7 +8,7 @@ Guidance for Claude Code when working in this repository.
 
 Phase 2 adds internal and external financial statement (FS) maps: each account maps to one numbered FS line per map, and the balance sheet and income statement can be laid out by account, internal FS or external FS from the same journal data.
 
-The full requirements are in [docs/phase-1-prd.md](docs/phase-1-prd.md) (Phase 2 FS maps are section 4.12, FR-33 to FR-36). Read it before planning any feature and reference requirement IDs (`FR-n`) in plans and commit messages.
+The full requirements are in [docs/phase-1-prd.md](docs/phase-1-prd.md) (Phase 2 FS maps are section 4.12, FR-33 to FR-37). Read it before planning any feature and reference requirement IDs (`FR-n`) in plans and commit messages.
 
 ### Stack
 
@@ -43,7 +43,7 @@ The full requirements are in [docs/phase-1-prd.md](docs/phase-1-prd.md) (Phase 2
 9. PDF and Excel export (done)
 10. Testing with made-up client data before any real files are used (done: demo client + `src/backend/endToEnd.test.ts`)
 
-Phase 2 so far: FS maps (FR-33 to FR-36, done).
+Phase 2 so far: FS maps and mapped statements (FR-33 to FR-36, done), trial balance by FS map (FR-37, done).
 
 Treat each step as a phase of a multi-phase plan (see Workflow). Out of scope for Phase 1: A/R and A/P aging, invoicing, payroll, sales tax, inventory, multi-user, cloud sync, bank feeds, bank reconciliation and multi-currency.
 
@@ -90,7 +90,7 @@ src/
                      importDates, duplicates: pure import logic used by ImportService
     posting/         bankEntryLines (FR-16), pickRule (FR-18), findTransferPairs (FR-19)
     reports/         Pure report builders over per-account balances (FR-29 to FR-31) and
-                     mappedStatements (statements rolled up by FS map, FR-36)
+                     mappedStatements (statements and the trial balance rolled up by FS map, FR-36, FR-37)
     exports/         ReportDocument layouts, HTML/Excel renderers, ElectronPdfPrinter (FR-32)
     demo/            Made-up demo client data and DemoClientService (step 10)
     ipc/             Thin handlers registered via handleValidated()

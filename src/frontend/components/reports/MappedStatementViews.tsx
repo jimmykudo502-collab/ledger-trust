@@ -1,11 +1,13 @@
-import { FS_MAP_LABELS, type FsMap } from "../../../common/fsMaps/fsMapSchemas";
-import { formatStatement } from "../../../common/money";
+import { Fragment } from "react";
+
+import { FS_MAP_LABELS, FS_SECTION_INFO, type FsMap } from "../../../common/fsMaps/fsMapSchemas";
+import { formatCents, formatStatement } from "../../../common/money";
 import {
   balanceSheetBlocks,
   incomeStatementBlocks,
   type StatementBlock,
 } from "../../../common/reports/mappedStatementLayout";
-import type { MappedBalanceSheet, MappedIncomeStatement } from "../../../common/reports/mappedStatementSchemas";
+import type { FsTrialBalance, MappedBalanceSheet, MappedIncomeStatement } from "../../../common/reports/mappedStatementSchemas";
 
 interface MappedViewProps {
   /** List the accounts under each FS line. */
@@ -117,6 +119,94 @@ export function MappedIncomeStatementView({ report, ...props }: MappedViewProps 
     <>
       <UnmappedNotice count={report.unmappedAccountCount} map={report.map} />
       <BlockTable blocks={incomeStatementBlocks(report)} {...props} />
+    </>
+  );
+}
+
+/**
+ * Trial balance grouped by an FS map (FR-37): each FS line with the amount
+ * shown on the statement, and the accounts that make it up with their
+ * balances. Clicking an account opens its general ledger.
+ */
+export function FsTrialBalanceView({ report, onOpenAccount }: { report: FsTrialBalance; onOpenAccount: (accountId: number) => void }) {
+  const balanced = report.totals.debitCents === report.totals.creditCents;
+  return (
+    <>
+      <UnmappedNotice count={report.unmappedAccountCount} map={report.map} />
+      <table className="data-table report-table">
+        <thead>
+          <tr>
+            <th className="code-col">Map no.</th>
+            <th>FS line / account</th>
+            <th className="money">Debit balance</th>
+            <th className="money">Credit balance</th>
+            <th className="money">FS amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {report.sections.map((section) => (
+            <Fragment key={section.section}>
+              <tr className="section-row">
+                <td colSpan={5}>{FS_SECTION_INFO[section.section].label}</td>
+              </tr>
+              {section.lines.map((line) => (
+                <Fragment key={line.lineId ?? `unmapped-${section.section}`}>
+                  <tr className="fs-line-row">
+                    <td className="code-col">{line.code}</td>
+                    <td>{line.lineId === null ? <span className="warning">{line.name}</span> : line.name}</td>
+                    <td />
+                    <td />
+                    <td className="money">{formatStatement(line.fsAmountCents)}</td>
+                  </tr>
+                  {line.accounts.map((account) => (
+                    <tr
+                      key={account.accountId}
+                      className="line-account clickable"
+                      title="Open this account's general ledger"
+                      onClick={() => onOpenAccount(account.accountId)}
+                    >
+                      <td />
+                      <td>
+                        <span className="link-like">
+                          {account.code} {account.name}
+                        </span>
+                      </td>
+                      <td className="money">{account.closingCents > 0 ? formatCents(account.closingCents) : ""}</td>
+                      <td className="money">{account.closingCents < 0 ? formatCents(-account.closingCents) : ""}</td>
+                      <td />
+                    </tr>
+                  ))}
+                </Fragment>
+              ))}
+              <tr className="subtotal-row">
+                <td />
+                <td>Total {FS_SECTION_INFO[section.section].label.toLowerCase()}</td>
+                <td />
+                <td />
+                <td className="money">{formatStatement(section.fsAmountCents)}</td>
+              </tr>
+            </Fragment>
+          ))}
+          {report.sections.length === 0 && (
+            <tr>
+              <td colSpan={5} className="muted">
+                Nothing posted up to this date.
+              </td>
+            </tr>
+          )}
+        </tbody>
+        <tfoot>
+          <tr className="totals-row">
+            <td colSpan={2}>
+              Totals{" "}
+              <span className={balanced ? "balanced" : "problem"}>{balanced ? "· Balanced" : "· Out of balance"}</span>
+            </td>
+            <td className="money">{formatCents(report.totals.debitCents)}</td>
+            <td className="money">{formatCents(report.totals.creditCents)}</td>
+            <td />
+          </tr>
+        </tfoot>
+      </table>
     </>
   );
 }

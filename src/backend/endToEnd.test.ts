@@ -89,6 +89,13 @@ describe("end to end with a made-up client (step 10)", () => {
       const mappedIncome = backend.mappedStatements.incomeStatement(clientId, Q1, map);
       expect(mappedIncome.unmappedAccountCount).toBe(0);
       expect(mappedIncome.netIncomeCents).toBe(is.netIncomeCents);
+      // The trial balance by FS map shows the accounts behind each line (FR-37).
+      const fsTb = backend.mappedStatements.trialBalance(clientId, Q1, map);
+      expect(fsTb.unmappedAccountCount).toBe(0);
+      expect(fsTb.totals.debitCents).toBe(fsTb.totals.creditCents);
+      for (const section of mappedSheet.assets) {
+        expect(fsTb.sections.find((s) => s.section === section.section)?.fsAmountCents ?? 0).toBe(section.totalCents);
+      }
     }
     const external = backend.mappedStatements.incomeStatement(clientId, Q1, "external");
     expect(external.operatingExpenses.lines.map((line) => line.code)).toEqual(["600", "610", "690"]);

@@ -6,12 +6,13 @@ import { isoDateSchema } from "../dates";
 import type { DateRange } from "../fiscalYears";
 import type { JournalSource } from "../journal/journalSchemas";
 
-/** The four core reports (FR-29). */
-export const REPORT_KINDS = ["trialBalance", "generalLedger", "balanceSheet", "incomeStatement"] as const;
+/** The four core reports (FR-29) and the trial balance by FS map (FR-37). */
+export const REPORT_KINDS = ["trialBalance", "fsTrialBalance", "generalLedger", "balanceSheet", "incomeStatement"] as const;
 export type ReportKind = (typeof REPORT_KINDS)[number];
 
 export const REPORT_TITLES: Record<ReportKind, string> = {
   trialBalance: "Trial Balance",
+  fsTrialBalance: "Trial Balance by FS Map",
   generalLedger: "General Ledger",
   balanceSheet: "Balance Sheet",
   incomeStatement: "Income Statement",

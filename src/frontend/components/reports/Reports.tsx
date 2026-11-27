@@ -17,14 +17,16 @@ import {
   STATEMENT_LAYOUT_LABELS,
   STATEMENT_LAYOUTS,
   type MappedBalanceSheet,
+  type FsTrialBalance,
   type MappedIncomeStatement,
   type StatementLayout,
 } from "../../../common/reports/mappedStatementSchemas";
+import { FS_MAP_LABELS, FS_MAPS, type FsMap } from "../../../common/fsMaps/fsMapSchemas";
 import type { FiscalYearView } from "../../../common/years/yearSchemas";
 import { lockedYearFor } from "../years/yearLogic";
 import { ReverseDialog } from "../years/ReverseDialog";
 import { presetRange, RANGE_PRESET_LABELS, type RangePreset } from "./reportRangeLogic";
-import { MappedBalanceSheetView, MappedIncomeStatementView } from "./MappedStatementViews";
+import { FsTrialBalanceView, MappedBalanceSheetView, MappedIncomeStatementView } from "./MappedStatementViews";
 import { BalanceSheetView, GeneralLedgerView, IncomeStatementView, TrialBalanceView } from "./ReportViews";
 
 interface ReportsProps {
@@ -33,6 +35,7 @@ interface ReportsProps {
 
 type LoadedReport =
   | { kind: "trialBalance"; data: TrialBalance }
+  | { kind: "fsTrialBalance"; data: FsTrialBalance }
   | { kind: "generalLedger"; data: GeneralLedger }
   | { kind: "balanceSheet"; data: BalanceSheet }
   | { kind: "incomeStatement"; data: IncomeStatement }
@@ -56,7 +59,8 @@ export const periodLabel = (kind: ReportKind, range: DateRange): string =>
  * entries. Clicking an account in the trial balance or a statement opens its
  * general ledger; the general ledger can also be viewed on its own. The
  * balance sheet and income statement can be laid out by account or by the
- * internal or external FS map (FR-36).
+ * internal or external FS map (FR-36), and the trial balance can be grouped
+ * by either FS map to show the accounts behind each statement line (FR-37).
  */
 export function Reports({ client }: ReportsProps) {
   const [kind, setKind] = useState<ReportKind>("trialBalance");
@@ -74,6 +78,7 @@ export function Reports({ client }: ReportsProps) {
   const [exporting, setExporting] = useState(false);
   const [layout, setLayout] = useState<StatementLayout>("accounts");
   const [showAccounts, setShowAccounts] = useState(false);
+  const [fsMap, setFsMap] = useState<FsMap>("internal");
 
   const exportAs = async (format: "pdf" | "xlsx") => {
     setExporting(true);
@@ -85,7 +90,7 @@ export function Reports({ client }: ReportsProps) {
         kind,
         { from: range.from, to: range.to, includeClosingEntries: includeClosing, accountId },
         format,
-        { layout, showAccounts },
+        { layout, showAccounts, map: fsMap },
       );
       if (result) setExported(result.path);
     } catch (caught) {
@@ -117,6 +122,8 @@ export function Reports({ client }: ReportsProps) {
       switch (kind) {
         case "trialBalance":
           return { kind, data: await window.reports.trialBalance(client.id, options) };
+        case "fsTrialBalance":
+          return { kind, data: await window.mappedStatements.trialBalance(client.id, options, fsMap) };
         case "generalLedger":
           return { kind, data: await window.reports.generalLedger(client.id, options) };
         case "balanceSheet":
@@ -135,7 +142,7 @@ export function Reports({ client }: ReportsProps) {
     return () => {
       cancelled = true;
     };
-  }, [client.id, kind, range, includeClosing, accountId, refresh, layout]);
+  }, [client.id, kind, range, includeClosing, accountId, refresh, layout, fsMap]);
 
   const openAccount = (id: number) => {
     setBackTo(kind);
@@ -222,7 +229,21 @@ export function Reports({ client }: ReportsProps) {
               )}
             </div>
           )}
-          {(kind === "trialBalance" || kind === "generalLedger" || kind === "balanceSheet") && (
+          {kind === "fsTrialBalance" && (
+            <div className="range-controls">
+              <label className="inline-field">
+                <span>FS map</span>
+                <select value={fsMap} onChange={(event) => setFsMap(event.target.value as FsMap)}>
+                  {FS_MAPS.map((option) => (
+                    <option key={option} value={option}>
+                      {FS_MAP_LABELS[option]} FS
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
+          {(kind === "trialBalance" || kind === "fsTrialBalance" || kind === "generalLedger" || kind === "balanceSheet") && (
             <label className="radio-line" title="Year-end closing entries move revenue and expenses into retained earnings">
               <input type="checkbox" checked={includeClosing} onChange={(event) => setIncludeClosing(event.target.checked)} />
               Include year-end closing entries
@@ -254,6 +275,9 @@ export function Reports({ client }: ReportsProps) {
       )}
 
       {report?.kind === "trialBalance" && kind === "trialBalance" && <TrialBalanceView report={report.data} onOpenAccount={openAccount} />}
+      {report?.kind === "fsTrialBalance" && kind === "fsTrialBalance" && report.data.map === fsMap && (
+        <FsTrialBalanceView report={report.data} onOpenAccount={openAccount} />
+      )}
       {report?.kind === "generalLedger" && kind === "generalLedger" && (
         <GeneralLedgerView
           report={report.data}

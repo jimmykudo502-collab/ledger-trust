@@ -1,9 +1,9 @@
 import { ACCOUNT_TYPE_LABELS } from "../../common/accounts/accountSchemas";
 import { formatLongDate } from "../../common/dates";
 import type { DateRange } from "../../common/fiscalYears";
-import type { FsMap } from "../../common/fsMaps/fsMapSchemas";
+import { FS_MAP_LABELS, FS_SECTION_INFO, type FsMap } from "../../common/fsMaps/fsMapSchemas";
 import { balanceSheetBlocks, incomeStatementBlocks, type StatementBlock } from "../../common/reports/mappedStatementLayout";
-import type { MappedBalanceSheet, MappedIncomeStatement } from "../../common/reports/mappedStatementSchemas";
+import type { FsTrialBalance, MappedBalanceSheet, MappedIncomeStatement } from "../../common/reports/mappedStatementSchemas";
 import {
   REPORT_TITLES,
   type BalanceSheet,
@@ -89,6 +89,54 @@ export const trialBalanceDocument = (clientName: string, report: TrialBalance): 
           [text("Totals"), null, null, null, money(report.totals.debitCents), money(report.totals.creditCents), money(report.totals.closingDebitCents), money(report.totals.closingCreditCents)],
           "total",
         ),
+      ],
+    },
+  ],
+});
+
+/**
+ * The printed title of the trial balance by FS map, e.g. "Trial Balance -
+ * External FS" (short enough for an Excel sheet name).
+ * @param map Internal or external.
+ */
+export const fsTrialBalanceTitle = (map: FsMap): string => `Trial Balance - ${FS_MAP_LABELS[map]} FS`;
+
+/**
+ * Trial balance grouped by an FS map as a document (FR-37): each FS line with
+ * its statement amount, the accounts that make it up with their debit or
+ * credit balance, and section totals.
+ * @param clientName The client's name.
+ * @param report The trial balance by FS map.
+ */
+export const fsTrialBalanceDocument = (clientName: string, report: FsTrialBalance): ReportDocument => ({
+  clientName,
+  title: fsTrialBalanceTitle(report.map),
+  period: periodText("fsTrialBalance", report.range),
+  sections: [
+    {
+      heading: null,
+      columns: [col("Map no."), col("FS line / account"), col("Debit balance", true), col("Credit balance", true), col("FS amount", true)],
+      rows: [
+        ...report.sections.flatMap((section) => [
+          row([text(FS_SECTION_INFO[section.section].label), null, null, null, null], "section"),
+          ...section.lines.flatMap((line) => [
+            row([text(line.code), text(line.name), null, null, money(line.fsAmountCents)]),
+            ...line.accounts.map((account) =>
+              row(
+                [
+                  null,
+                  text(`    ${account.code} ${account.name}`),
+                  account.closingCents > 0 ? money(account.closingCents) : null,
+                  account.closingCents < 0 ? money(-account.closingCents) : null,
+                  null,
+                ],
+                "subtle",
+              ),
+            ),
+          ]),
+          row([null, text(`Total ${FS_SECTION_INFO[section.section].label.toLowerCase()}`), null, null, money(section.fsAmountCents)], "subtotal"),
+        ]),
+        row([text("Totals"), null, money(report.totals.debitCents), money(report.totals.creditCents), null], "total"),
       ],
     },
   ],

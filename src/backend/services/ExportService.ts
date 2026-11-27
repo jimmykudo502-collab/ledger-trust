@@ -5,6 +5,7 @@ import { UserFacingError } from "../errors";
 import {
   balanceSheetDocument,
   generalLedgerDocument,
+  fsTrialBalanceDocument,
   incomeStatementDocument,
   mappedBalanceSheetDocument,
   mappedIncomeStatementDocument,
@@ -51,7 +52,7 @@ export class ExportService {
    * @param kind Which report.
    * @param options Dates and options, as on screen.
    * @param format PDF or Excel.
-   * @param presentation Statement layout (by account or FS map), as on screen.
+   * @param presentation Statement layout (by account or FS map) and the trial balance's FS map, as on screen.
    */
   public async export(
     clientId: string,
@@ -75,7 +76,7 @@ export class ExportService {
   public document(clientId: string, kind: ReportKind, options: ReportOptions, presentation: ExportPresentation = {}): ReportDocument {
     const client = this.clients.find(clientIdSchema.parse(clientId));
     if (!client) throw new UserFacingError("That client no longer exists.");
-    const { layout, showAccounts } = exportPresentationSchema.parse(presentation);
+    const { layout, showAccounts, map } = exportPresentationSchema.parse(presentation);
     if (layout !== "accounts" && kind === "balanceSheet") {
       return mappedBalanceSheetDocument(client.name, this.mapped.balanceSheet(clientId, options, layout), showAccounts);
     }
@@ -85,6 +86,8 @@ export class ExportService {
     switch (kind) {
       case "trialBalance":
         return trialBalanceDocument(client.name, this.reports.trialBalance(clientId, options));
+      case "fsTrialBalance":
+        return fsTrialBalanceDocument(client.name, this.mapped.trialBalance(clientId, options, map));
       case "generalLedger":
         return generalLedgerDocument(client.name, this.reports.generalLedger(clientId, options));
       case "balanceSheet":

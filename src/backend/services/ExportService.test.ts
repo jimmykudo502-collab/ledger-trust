@@ -118,6 +118,14 @@ describe("ExportService (FR-32)", () => {
     expect(detailed.sections[0].rows.some((r) => r.cells.some((c) => c && "text" in c && c.text.includes("5100 Repairs")))).toBe(true);
 
     // Nothing is mapped on the internal map yet: everything lands in the catch-all lines, totals unchanged.
+    const tb = exportsService.document(clientId, "fsTrialBalance", options, { map: "external" });
+    expect(tb.title).toBe("Trial Balance - External FS");
+    const tbRows = tb.sections[0].rows.map((r) => r.cells.map((c) => (c === null ? null : "text" in c ? c.text : c.cents)));
+    expect(tbRows).toContainEqual(["400", "Revenue", null, null, 145000]);
+    expect(tbRows.some((cells) => String(cells[1]).includes("5100 Repairs"))).toBe(true);
+    const tbTotals = tbRows.find((cells) => cells[0] === "Totals");
+    expect(tbTotals?.[2]).toBe(tbTotals?.[3]);
+
     const internal = exportsService.document(clientId, "balanceSheet", options, { layout: "internal" });
     expect(internal.title).toBe("Balance Sheet (internal)");
     const pdf = await exportsService.export(clientId, "balanceSheet", options, "pdf", { layout: "internal" });
